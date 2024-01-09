@@ -1,7 +1,7 @@
 {
     "db_path": "data",
     "log_path": "logs",  
-    "interval": 5,
+    "interval": 60,
     "targets": {
         "chrome": {
             "limit": 7200
@@ -11,9 +11,6 @@
         },
         "steam": {
             "limit": 7200
-        },
-        "mate-calc": {
-            "limit": 25
         }        
     }
 }

@@ -44,6 +44,10 @@ func (s *Spy) run(last time.Time) error {
 	targets := make(map[string][]int)
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 
+	if elapsed < float64(s.Config.Interval) {
+		return nil
+	}
+
 	for _, proc := range processes {
 		name := proc.Executable()
 

@@ -6,29 +6,23 @@ import (
 )
 
 type Target struct {
-	Elapsed []float64 `json:"elapsed"`
-	Limit   float64   `json:"limit"`
+	Elapsed float64 `json:"elapsed"`
+	Limit   float64 `json:"limit"`
 }
 
 func NewTarget(limit float64) *Target {
 	return &Target{
-		Elapsed: make([]float64, 0),
+		Elapsed: 0,
 		Limit:   limit,
 	}
 }
 
 func (t *Target) AddElapsed(elapsed float64) {
-	t.Elapsed = append(t.Elapsed, elapsed)
+	t.Elapsed += elapsed
 }
 
 func (t *Target) GetElapsed() float64 {
-	ret := 0.0
-
-	for _, v := range t.Elapsed {
-		ret += v
-	}
-
-	return ret
+	return t.Elapsed
 }
 
 func (t *Target) GetLimit() float64 {
@@ -53,10 +47,6 @@ func (t *Target) FromJson(jsonString string) error {
 	if err != nil {
 		log.Printf("Error unmarshalling target: %s", err)
 		return err
-	}
-
-	if t.Elapsed == nil {
-		t.Elapsed = make([]float64, 0)
 	}
 
 	return nil

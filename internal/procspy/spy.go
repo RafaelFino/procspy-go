@@ -1,7 +1,10 @@
 package procspy
 
 import (
+	"fmt"
 	"log"
+	"math"
+	"os"
 	"time"
 
 	"github.com/mitchellh/go-ps"
@@ -13,9 +16,8 @@ type Spy struct {
 	enabled bool
 }
 
-func NewSpy(configFile string) *Spy {
-	config := NewConfig()
-	config.LoadFromFile(configFile)
+func NewSpy(config *Config) *Spy {
+	fmt.Print("Starting spy...\n")
 
 	return &Spy{
 		Config:  config,
@@ -23,26 +25,75 @@ func NewSpy(configFile string) *Spy {
 	}
 }
 
-func (s *Spy) run(last time.Time) {
-	storage := NewStorage(s.Config.Database)
-	storage.Connect()
-	storage.CreateTables()
-	defer storage.Disconnect()
+func (s *Spy) run(last time.Time) error {
+	storage, err := NewStorage(s.Config.DBPath)
 
-	for _, proc := range ps.Processes() {
+	if err != nil {
+		log.Printf("Error opening database: %s", err)
+		return err
+	}
+
+	defer storage.Close()
+
+	processes, err := ps.Processes()
+	if err != nil {
+		log.Printf("Error getting processes: %s", err)
+		return err
+	}
+
+	targets := make(map[string][]int)
+	elapsed := roundFloat(time.Since(last).Seconds(), 2)
+
+	for _, proc := range processes {
 		name := proc.Executable()
 
-		if target, found := s.Config.Targets[name]; found {
-			elapsed := time.Since(last).Seconds()
+		if _, found := s.Config.Targets[name]; found {
+			if _, found := targets[name]; !found {
+				targets[name] = make([]int, 0)
+			}
+			pids := targets[name]
+			pids = append(pids, proc.Pid())
+			targets[name] = pids
+		}
+	}
 
+	for name, pids := range targets {
+		if target, found := s.Config.Targets[name]; found {
 			target.AddElapsed(elapsed)
-			storage.InsertProcess(name, elapsed)
-			log.Printf("Process %s elapsed %f seconds", name, elapsed)
+			s.Config.Targets[name] = target
+			err = storage.InsertProcess(name, elapsed)
+			if err != nil {
+				log.Printf("Error inserting process %s: %s", name, err)
+			}
+
+			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", name, elapsed, target.GetElapsed(), target.GetLimit())
 
 			if target.IsExpired() {
-				log.Printf("Process %s exceeded limit of %f seconds", name, target.GetLimit())
-				proc.Kill()
-				log.Printf("Process %s killed", name)
+				log.Printf(" >> Process %s exceeded limit of %.2f seconds", name, target.GetLimit())
+				s.kill(pids)
+				log.Printf(" >> Killed %d processes from %s", len(pids), name)
+			}
+		}
+	}
+
+	return err
+}
+
+func (s *Spy) kill(pids []int) {
+	if pids == nil || len(pids) == 0 {
+		return
+	}
+
+	log.Printf(" >> Killing processes: %v", pids)
+
+	for _, pid := range pids {
+		p, err := os.FindProcess(pid)
+		if err != nil {
+			log.Printf("Error finding process %d: %s", pid, err)
+		} else {
+			err = p.Kill()
+			if err != nil {
+				log.Printf("Error killing process %d: %s", pid, err)
 			}
 		}
 	}
@@ -52,8 +103,9 @@ func (s *Spy) Start() {
 	s.loadFromDatabase()
 
 	last := time.Now()
-
 	s.enabled = true
+
+	log.Printf("Starting with config %s", s.Config.ToJson())
 
 	for s.enabled {
 		s.run(last)
@@ -71,19 +123,30 @@ func (s *Spy) IsEnabled() bool {
 }
 
 func (s *Spy) loadFromDatabase() {
-	storage := NewStorage(s.Config.Database)
-	storage.Connect()
-	defer storage.Disconnect()
+	storage, err := NewStorage(s.Config.DBPath)
+
+	if err != nil {
+		log.Printf("Error opening database: %s", err)
+		return
+	}
+
+	defer storage.Close()
 
 	elapsed, err := storage.GetElapsed()
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error getting elapsed: %s", err)
 		return
 	}
 
 	for name, limit := range s.Config.Targets {
-		if elapsed, found := elapsed[name]; found {
+		if elapsed, found := elapsed[name]; found && elapsed > 0 {
 			limit.AddElapsed(elapsed)
+			s.Config.Targets[name] = limit
 		}
 	}
+}
+
+func roundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }

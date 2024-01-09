@@ -9,24 +9,26 @@ import (
 
 type Config struct {
 	Interval int               `json:"interval"`
-	Database string            `json:"database"`
-	Logfile  string            `json:"logfile"`
+	DBPath   string            `json:"db_path"`
+	LogPath  string            `json:"log_path"`
 	Targets  map[string]Target `json:"targets"`
 }
 
 func NewConfig() *Config {
 	return &Config{
 		Interval: 60,
-		Database: "procspy.db",
-		Logfile:  "procspy.log",
+		DBPath:   "data",
+		LogPath:  "logs",
 		Targets:  make(map[string]Target),
 	}
 }
 
 func (c *Config) LoadFromFile(filename string) error {
+	log.Println("Loading config from file: ", filename)
+
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error opening file: %s", err)
 		return err
 	}
 	defer file.Close()
@@ -39,7 +41,7 @@ func (c *Config) LoadFromFile(filename string) error {
 
 	err = c.FromJson(jsonString)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error parsing json: %s", err)
 		return err
 	}
 
@@ -47,16 +49,18 @@ func (c *Config) LoadFromFile(filename string) error {
 }
 
 func (c *Config) SaveToFile(filename string) error {
+	log.Printf("Saving config to file: %s", filename)
+
 	file, err := os.Create(filename)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error creating file: %s", err)
 		return err
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(c.ToJson())
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error writing to file: %s", err)
 		return err
 	}
 
@@ -66,7 +70,7 @@ func (c *Config) SaveToFile(filename string) error {
 func (c *Config) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error marshalling config: %s", err)
 	}
 
 	return string(ret)
@@ -75,15 +79,20 @@ func (c *Config) ToJson() string {
 func (c *Config) FromJson(jsonString string) error {
 	err := json.Unmarshal([]byte(jsonString), &c)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error unmarshalling config: %s", err)
 		return err
+	}
+
+	for name, target := range c.Targets {
+		target.FromJson(target.ToJson())
+		c.Targets[name] = target
 	}
 
 	return nil
 }
 
 func (c *Config) AddTarget(name string, limit float64) {
-	c.Targets = append(c.Targets, Target{name: name, limit: limit})
+	c.Targets[name] = *NewTarget(limit)
 }
 
 func (c *Config) GetTargets() map[string]Target {
@@ -92,28 +101,4 @@ func (c *Config) GetTargets() map[string]Target {
 
 func (c *Config) GetInterval() int {
 	return c.Interval
-}
-
-func (c *Config) GetDatabase() string {
-	return c.Database
-}
-
-func (c *Config) GetLogfile() string {
-	return c.Logfile
-}
-
-func (c *Config) GetTarget(name string) Target {
-	return c.Targets[name]
-}
-
-func (c *Config) GetTargetNames() []string {
-	var names []string
-	for _, target := range c.Targets {
-		names = append(names, target.name)
-	}
-	return names
-}
-
-func (c *Config) GetTargetLimit(name string) float64 {
-	return c.Targets[name].limit
 }

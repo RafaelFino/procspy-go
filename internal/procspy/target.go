@@ -42,7 +42,7 @@ func (t *Target) IsExpired() bool {
 func (t *Target) ToJson() string {
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error marshalling target: %s", err)
 	}
 
 	return string(ret)
@@ -51,8 +51,12 @@ func (t *Target) ToJson() string {
 func (t *Target) FromJson(jsonString string) error {
 	err := json.Unmarshal([]byte(jsonString), &t)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error unmarshalling target: %s", err)
 		return err
+	}
+
+	if t.Elapsed == nil {
+		t.Elapsed = make([]float64, 0)
 	}
 
 	return nil

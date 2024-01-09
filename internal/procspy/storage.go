@@ -1,43 +1,59 @@
 package procspy
 
 import (
-	_ "github.com/mattn/go-sqlite3"
+	"database/sql"
+	"fmt"
 	"log"
+	"os"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Storage struct {
 	DatabasePath string `json:"database_path"`
-	db *sql.DB	
-)
-
-func NewStorage(databasePath string) *Storage {
-	return &Storage{
-		DatabasePath: databasePath,
-	}
+	db           *sql.DB
 }
 
-func (s *Storage) Connect() error {
-	db, err := sql.Open("sqlite3", s.DatabasePath)
+func NewStorage(path string) (*Storage, error) {
+	ret := &Storage{
+		DatabasePath: path,
+	}
+
+	if err := os.Mkdir(path, 0755); !os.IsExist(err) {
+		fmt.Printf("Error creating directory %s: %s", path, err)
+		return nil, err
+	}
+
+	dbFile := fmt.Sprintf("%s/procspy.db", path)
+
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
-		log.Println(err)
-		return err
+		log.Printf("Error opening database: %s on %s", err, dbFile)
+		return nil, err
 	}
-	s.db = db
 
-	return nil
+	ret.db = db
+
+	err = ret.createTables()
+
+	if err != nil {
+		log.Printf("Error creating tables: %s", err)
+	}
+
+	return ret, err
 }
 
-func (s *Storage) Disconnect() error {
+func (s *Storage) Close() error {
 	err := s.db.Close()
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error closing database: %s", err)
 		return err
 	}
 
 	return nil
 }
 
-func (s *Storage) CreateTables() error {
+func (s *Storage) createTables() error {
 	const command string = `
 CREATE TABLE IF NOT EXISTS processes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,                
@@ -45,13 +61,22 @@ CREATE TABLE IF NOT EXISTS processes (
 	elapsed REAL NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );`
-	_, err := s.db.Exec(command)
+	result, err := s.db.Exec(command)
 	if err != nil {
-		log.Println(err)
-		return err
+		log.Printf("Error creating table: %s", err)
 	}
 
-	return nil
+	if result != nil {
+		rows, err := result.RowsAffected()
+		if err != nil {
+			log.Printf("Error getting rows affected: %s", err)
+		}
+		if rows > 0 {
+			log.Printf("Table created")
+		}
+	}
+
+	return err
 }
 
 func (s *Storage) InsertProcess(name string, elapsed float64) error {
@@ -59,19 +84,18 @@ func (s *Storage) InsertProcess(name string, elapsed float64) error {
 INSERT INTO processes (name, elapsed) VALUES (?, ?);`
 	_, err := s.db.Exec(command, name, elapsed)
 	if err != nil {
-		log.Println(err)
-		return err
+		log.Printf("Error inserting process: %s", err)
 	}
 
-	return nil
+	return err
 }
 
 func (s *Storage) GetElapsed() (map[string]float64, error) {
 	const command string = `
-SELECT name, SUM(elapsed) FROM processes GROUP BY name;`	
+SELECT name, SUM(elapsed) FROM processes GROUP BY name;`
 	rows, err := s.db.Query(command)
 	if err != nil {
-		log.Println(err)
+		log.Printf("Error getting elapsed: %s", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -82,11 +106,11 @@ SELECT name, SUM(elapsed) FROM processes GROUP BY name;`
 		var elapsed float64
 		err = rows.Scan(&name, &elapsed)
 		if err != nil {
-			log.Println(err)
+			log.Printf("Error scanning elapsed: %s", err)
 			return nil, err
 		}
 		ret[name] = elapsed
 	}
-	
+
 	return ret, nil
 }

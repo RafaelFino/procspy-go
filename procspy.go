@@ -49,9 +49,10 @@ func initLogger(path string) error {
 	}
 
 	writer, err := rotatelogs.New(
-		fmt.Sprintf("%s/%s.log", path, "%Y%m%d.%H"),
-		rotatelogs.WithMaxAge(time.Hour),
-		rotatelogs.WithRotationTime(time.Second*10),
+		fmt.Sprintf("%s/%s.log", path, "%Y%m%d"),
+		rotatelogs.WithMaxAge(24*time.Hour),
+		rotatelogs.WithRotationTime(time.Hour),
+		rotatelogs.WithRotationCount(30), //30 days
 	)
 	if err != nil {
 		log.Fatalf("Failed to Initialize Log File %s", err)

@@ -11,14 +11,16 @@ import (
 )
 
 type Spy struct {
-	Config  *Config
-	enabled bool
+	Config     *Config
+	enabled    bool
+	currentDay int
 }
 
 func NewSpy(config *Config) *Spy {
 	return &Spy{
-		Config:  config,
-		enabled: false,
+		Config:     config,
+		enabled:    false,
+		currentDay: time.Now().Day(),
 	}
 }
 
@@ -36,6 +38,16 @@ func (s *Spy) run(last time.Time) error {
 	if err != nil {
 		log.Printf("Error getting processes: %s", err)
 		return err
+	}
+
+	if s.currentDay < time.Now().Day() {
+		log.Printf("Resetting elapsed time for all processes, day changed")
+		s.currentDay = time.Now().Day()
+		for name, limit := range s.Config.Targets {
+			log.Printf("Resetting elapsed time for %s", name)
+			limit.ResetElapsed()
+			s.Config.Targets[name] = limit
+		}
 	}
 
 	targets := make(map[string][]int)

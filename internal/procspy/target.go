@@ -51,3 +51,7 @@ func (t *Target) FromJson(jsonString string) error {
 
 	return nil
 }
+
+func (t *Target) ResetElapsed() {
+	t.Elapsed = 0
+}

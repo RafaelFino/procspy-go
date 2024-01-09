@@ -1,7 +1,6 @@
 package procspy
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -17,8 +16,6 @@ type Spy struct {
 }
 
 func NewSpy(config *Config) *Spy {
-	fmt.Print("Starting spy...\n")
-
 	return &Spy{
 		Config:  config,
 		enabled: false,

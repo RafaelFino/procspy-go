@@ -18,9 +18,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Print("Starting...\n")
 	configFile := os.Args[1]
-	log.Printf("Using config file: %s", configFile)
 
 	cfg := procspy.NewConfig()
 	cfg.LoadFromFile(configFile)
@@ -31,7 +29,7 @@ func main() {
 		log.SetOutput(os.Stdout)
 	}
 
-	log.Printf("\n%s\nStarting", getLogo())
+	fmt.Printf("%s\nStarting...", getLogo())
 
 	spy := procspy.NewSpy(cfg)
 	go spy.Start()

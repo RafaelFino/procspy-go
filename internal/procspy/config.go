@@ -24,8 +24,6 @@ func NewConfig() *Config {
 }
 
 func (c *Config) LoadFromFile(filename string) error {
-	log.Println("Loading config from file: ", filename)
-
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening file: %s", err)

@@ -34,7 +34,7 @@ func NewStorage(path string) (*Storage, error) {
 
 	ret.db = db
 
-	err = ret.createTables()
+	err = ret.preapreDatabase()
 
 	if err != nil {
 		log.Printf("Error creating tables: %s", err)
@@ -53,14 +53,39 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) createTables() error {
+func (s *Storage) preapreDatabase() error {
 	const command string = `
 CREATE TABLE IF NOT EXISTS processes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,                
 	name TEXT NOT NULL,
 	elapsed REAL NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);`
+);
+
+CREATE TABLE IF NOT EXISTS processes_old (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,                
+	name TEXT NOT NULL,
+	elapsed REAL NOT NULL,
+	created_at DATETIME NOT NULL
+);
+
+INSERT INTO processes_old 
+SELECT
+	min(id) id,
+	name, 
+	sum(elapsed) elapsed,
+	date(created_at) created_at
+FROM 
+	processes 
+WHERE created_at < datetime('now', '-1 day')
+GROUP BY 
+	name, date(created_at)
+ORDER BY 
+	created_at DESC;
+
+
+DELETE FROM processes WHERE created_at < datetime('now', '-1 day');
+`
 	result, err := s.db.Exec(command)
 	if err != nil {
 		log.Printf("Error creating table: %s", err)

@@ -1,0 +1,10 @@
+{
+    "db_path": "data",
+    "log_path": "logs",  
+    "interval": 5,
+    "targets": {
+        "mate-calc": {
+            "limit": 20
+        }
+    }
+}

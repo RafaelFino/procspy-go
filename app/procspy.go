@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"internal/procspy/procspy"
-	"log"
 	"os"
+	"procspy/internal/procspy"
 )
 
 func main() {
@@ -12,11 +11,13 @@ func main() {
 		fmt.Print("Usage: procspy <config_file>\n")
 		os.Exit(1)
 	}
+
+	fmt.Print("Starting...\n")
 	configFile := os.Args[1]
 
 	spy := procspy.NewSpy(configFile)
 	go spy.Start()
 	defer spy.Stop()
 
-	log.Print("Running...")
+	fmt.Print("Press enter to stop...\n")
 }

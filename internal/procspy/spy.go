@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/mitchellh/go-ps"
 	_ "github.com/mitchellh/go-ps"
 )
 
@@ -12,17 +13,14 @@ type Spy struct {
 	enabled bool
 }
 
-func NewSpy(config *Config) *Spy {
+func NewSpy(configFile string) *Spy {
+	config := NewConfig()
+	config.LoadFromFile(configFile)
+
 	return &Spy{
 		Config:  config,
 		enabled: false,
 	}
-}
-
-func NewSpy(configFile string) *Spy {
-	config := NewConfig()
-	config.LoadFromFile(configFile)
-	return NewSpy(config)
 }
 
 func (s *Spy) run(last time.Time) {

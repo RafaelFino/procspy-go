@@ -1,5 +1,5 @@
 build:
-	go build -o bin/procspy procspy.go
+	./build.sh
 
 run:
 	go run procspy.go etc/config.json
@@ -8,7 +8,7 @@ run-text:
 	go run procspy.go etc/config-test.json	
 
 all:
-	./build.sh
+	./build.sh all
 
 clean:
 	rm -rf bin/*

@@ -40,11 +40,11 @@ func (s *Spy) run(last time.Time) error {
 		return err
 	}
 
-	if s.currentDay < time.Now().Day() {
+	if s.currentDay != time.Now().Day() {
 		log.Printf("Resetting elapsed time for all processes, day changed")
 		s.currentDay = time.Now().Day()
 		for name, limit := range s.Config.Targets {
-			log.Printf("Resetting elapsed time for %s", name)
+			log.Printf(" # [%s]Resetting elapsed time", name)
 			limit.ResetElapsed()
 			s.Config.Targets[name] = limit
 		}
@@ -82,9 +82,9 @@ func (s *Spy) run(last time.Time) error {
 			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", name, elapsed, target.GetElapsed(), target.GetLimit())
 
 			if target.IsExpired() {
-				log.Printf(" >> Process %s exceeded limit of %.2f seconds", name, target.GetLimit())
+				log.Printf(" >> [%s] Exceeded limit of %.2f seconds, terminate all processes...", name, target.GetLimit())
 				s.kill(pids)
-				log.Printf(" >> Killed %d processes from %s", len(pids), name)
+				log.Printf(" >> [%s] Killed %d processes", name, len(pids))
 			}
 		}
 	}

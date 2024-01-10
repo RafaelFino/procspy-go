@@ -69,6 +69,18 @@ CREATE TABLE IF NOT EXISTS processes_old (
 	created_at DATETIME NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS killed (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL,
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS killed_old (
+	id INTEGER PRIMARY KEY,
+	name TEXT NOT NULL,
+	created_at DATETIME NOT NULL
+);
+
 INSERT INTO processes_old 
 SELECT
 	min(id) id,
@@ -85,20 +97,22 @@ ORDER BY
 
 
 DELETE FROM processes WHERE created_at < datetime('now', '-1 day');
+
+INSERT INTO killed_old
+SELECT
+	id,
+	name,
+	created_at
+FROM
+	killed
+WHERE created_at < datetime('now', '-1 day')
+ON CONFLICT DO NOTHING;
+
+DELETE FROM killed WHERE created_at < datetime('now', '-1 day');
 `
-	result, err := s.db.Exec(command)
+	_, err := s.db.Exec(command)
 	if err != nil {
 		log.Printf("Error creating table: %s", err)
-	}
-
-	if result != nil {
-		rows, err := result.RowsAffected()
-		if err != nil {
-			log.Printf("Error getting rows affected: %s", err)
-		}
-		if rows > 0 {
-			log.Printf("Table created")
-		}
 	}
 
 	return err

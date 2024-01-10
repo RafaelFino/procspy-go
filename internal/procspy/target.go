@@ -30,6 +30,10 @@ func (t *Target) GetLimit() float64 {
 }
 
 func (t *Target) IsExpired() bool {
+	if t.GetLimit() <= 0 {
+		return false
+	}
+
 	return t.GetElapsed() > t.GetLimit()
 }
 

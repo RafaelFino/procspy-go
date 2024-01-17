@@ -2,13 +2,13 @@
 	"interval": 5,
 	"db_path": "data",
 	"log_path": "logs",
-	"config_url": "http://localhost:8000/remote-config.json",
+	"config_url": "http://rgt-tools.duckdns.org/api/public/dl/9ziyBW4A",
 	"targets": [
 		{
-			"name": "mousepad",
-			"limit": 220,
-			"pattern": "mousepad",
-			"kill": true,
+			"name": "chrome",
+			"limit": 7200,
+			"pattern": "chrome",
+			"kill": false,
 			"command": ""
 		}
 	],

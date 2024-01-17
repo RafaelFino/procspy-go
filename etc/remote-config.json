@@ -1,10 +1,10 @@
 {
 	"targets": [
 		{
-			"name": "mousepad",
-			"limit": 220,
-			"pattern": "mousepad",
-			"kill": true
+			"name": "chrome",
+			"limit": 7200,
+			"pattern": "chrome",
+			"kill": false
 		}
 	]
 }

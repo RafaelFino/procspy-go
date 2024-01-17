@@ -15,7 +15,7 @@ if [ "$par" == "all" ]; then
         for arch in "${archs[@]}"
         do
             echo "Building for $os $arch"
-            GOOS=$os GOARCH=$arch go build -o bin/$os-$arch/procspy procspy.go
+            GOOS=$os GOARCH=$arch go build -o bin/$os-$arch/procspy cmd/procspy.go
         done
     done
     exit 0    
@@ -23,6 +23,6 @@ fi
 
 os=`go env GOOS`
 arch=`go env GOARCH`
-go build -o bin/$os-$arch/procspy procspy.go
+go build -o bin/$os-$arch/procspy cmd/procspy.go
 
 

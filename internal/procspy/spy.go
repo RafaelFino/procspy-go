@@ -126,11 +126,11 @@ func (s *Spy) kill(pids []int) {
 	for _, pid := range pids {
 		p, err := os.FindProcess(pid)
 		if err != nil {
-			log.Printf("Error finding process %d: %s", pid, err)
+			log.Printf(" >> Process %d not found: %s", pid, err)
 		} else {
 			err = p.Kill()
 			if err != nil {
-				log.Printf("Error killing process %d: %s", pid, err)
+				log.Printf(" >> Warn: killing process %d: %s", pid, err)
 			}
 		}
 	}

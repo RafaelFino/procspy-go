@@ -21,10 +21,12 @@ type Config struct {
 	Targets     []Target `json:"targets"`
 	LoadFromUrl bool     `json:"load_from_url"`
 	localFile   string
+	remoteCS    string
+	onUpdate    chan bool
 }
 
 func NewConfig() *Config {
-	return &Config{
+	ret := &Config{
 		Interval:    60,
 		DBPath:      "data",
 		LogPath:     "logs",
@@ -32,13 +34,15 @@ func NewConfig() *Config {
 		Targets:     make([]Target, 0),
 		LoadFromUrl: false,
 	}
+
+	return ret
 }
 
-func (c *Config) LoadFromFile(filename string) error {
+func InitConfig(filename string, onUpdate chan bool) (*Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening file: %s", err)
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
@@ -48,15 +52,18 @@ func (c *Config) LoadFromFile(filename string) error {
 		jsonString += scanner.Text()
 	}
 
-	err = c.FromJson(jsonString)
+	ret, err := ConfigFromJson(jsonString)
 	if err != nil {
 		log.Printf("Error parsing json: %s", err)
-		return err
+		return nil, err
 	}
 
-	c.localFile = filename
+	ret.localFile = filename
 
-	return nil
+	err = ret.UpdateFromUrl()
+	ret.onUpdate = onUpdate
+
+	return ret, nil
 }
 
 func (c *Config) SaveToFile(filename string) error {
@@ -87,26 +94,41 @@ func (c *Config) ToJson() string {
 	return string(ret)
 }
 
-func (c *Config) FromJson(jsonString string) error {
-	err := json.Unmarshal([]byte(jsonString), &c)
+func ConfigFromJson(jsonString string) (*Config, error) {
+	ret := NewConfig()
+	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
 		log.Printf("Error unmarshalling config: %s", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return ret, nil
+}
+
+func (c *Config) GetRemoteCS() string {
+	return c.remoteCS
+}
+
+func (c *Config) SetRemoteCS(cs string) {
+	c.remoteCS = cs
+}
+
+func (c *Config) GetLocalFile() string {
+	return c.localFile
+}
+
+func (c *Config) SetLocalFile(filename string) {
+	c.localFile = filename
 }
 
 func (c *Config) calcCheckSum(data string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
 }
 
-func (c *Config) FromUrl() error {
+func (c *Config) UpdateFromUrl() error {
 	if !c.LoadFromUrl {
 		return nil
 	}
-
-	log.Printf("Loading config from url: %s", c.ConfigUrl)
 
 	jsonString, err := c.downloadConfigFromURL()
 	if err != nil {
@@ -114,26 +136,39 @@ func (c *Config) FromUrl() error {
 		return err
 	}
 
-	current := c.calcCheckSum(c.ToJson())
-	fromUrl := c.calcCheckSum(jsonString)
-
-	if fromUrl != current {
-		log.Printf("Config changed, updating")
-		err = c.FromJson(jsonString)
+	remoteCS := c.calcCheckSum(jsonString)
+	if remoteCS != c.GetRemoteCS() {
+		data := make(map[string][]Target, 0)
+		err = json.Unmarshal([]byte(jsonString), &data)
 		if err != nil {
-			log.Printf("Error parsing json: %s", err)
+			log.Printf("Error unmarshalling config: %s from %s", err, jsonString)
 			return err
 		}
 
-		c.SaveToFile(c.localFile)
+		c.Targets = make([]Target, 0)
+
+		for _, target := range data["targets"] {
+			c.Targets = append(c.Targets, target)
+			log.Printf("Updating target %s", target.GetName())
+		}
+
+		err = c.SaveToFile(c.GetLocalFile())
+		if err != nil {
+			log.Printf("Error saving config: %s", err)
+			return err
+		}
+
+		c.SetRemoteCS(remoteCS)
+		log.Printf("Config updated from url: [%s]\n%s", remoteCS, c.ToJson())
+		go func() {
+			c.onUpdate <- true
+		}()
 	}
 
 	return nil
 }
 
 func (c *Config) downloadConfigFromURL() (string, error) {
-	log.Printf("Downloading string from url: %s", c.ConfigUrl)
-
 	// Get the data
 	resp, err := http.Get(c.ConfigUrl)
 	if err != nil {
@@ -146,7 +181,7 @@ func (c *Config) downloadConfigFromURL() (string, error) {
 	n, err := io.Copy(buf, resp.Body)
 
 	if n == 0 {
-		log.Printf("Error downloading config: %d bytes read", err, n)
+		log.Printf("Error downloading config: %d bytes read: %s", n, err)
 		return "", errors.New("No data read")
 	}
 

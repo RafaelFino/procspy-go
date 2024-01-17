@@ -1,0 +1,10 @@
+{
+	"targets": [
+		{
+			"name": "mousepad",
+			"limit": 220,
+			"pattern": "mousepad",
+			"kill": true
+		}
+	]
+}

@@ -7,8 +7,8 @@ import (
 )
 
 type Target struct {
-	Name    string  `json:"name"`
-	Elapsed float64 `json:"elapsed"`
+	Name    string `json:"name"`
+	elapsed float64
 	Limit   float64 `json:"limit"`
 	Pattern string  `json:"pattern"`
 	Kill    bool    `json:"kill"`
@@ -19,7 +19,7 @@ type Target struct {
 func NewTarget(name string, limit float64, pattern string, kill bool, command string) *Target {
 	return &Target{
 		Name:    name,
-		Elapsed: 0,
+		elapsed: 0,
 		Limit:   limit,
 		Pattern: pattern,
 		Kill:    kill,
@@ -41,11 +41,11 @@ func (t *Target) GetCommand() string {
 }
 
 func (t *Target) AddElapsed(elapsed float64) {
-	t.Elapsed += elapsed
+	t.elapsed += elapsed
 }
 
 func (t *Target) GetElapsed() float64 {
-	return t.Elapsed
+	return t.elapsed
 }
 
 func (t *Target) GetLimit() float64 {
@@ -87,16 +87,17 @@ func (t *Target) ToJson() string {
 	return string(ret)
 }
 
-func (t *Target) FromJson(jsonString string) error {
-	err := json.Unmarshal([]byte(jsonString), &t)
+func TargetFromJson(jsonString string) (*Target, error) {
+	ret := NewTarget("", 0, "", false, "")
+	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
 		log.Printf("Error unmarshalling target: %s", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return ret, nil
 }
 
 func (t *Target) ResetElapsed() {
-	t.Elapsed = 0
+	t.elapsed = 0
 }

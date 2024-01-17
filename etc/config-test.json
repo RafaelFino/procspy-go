@@ -1,16 +1,16 @@
 {
-    "db_path": "data",
-    "log_path": "logs",  
-    "interval": 5,
-    "config_url": "https://rgt-tools.duckdns/config.json",
-    "load_from_url": false,
-    "targets": [
-        {
-            "name": "calc",
-            "limit": 20,
-            "pattern": "mate-calc",
-            "kill": true,
-            "command": "mousepad"
-        }
-    ]
+	"interval": 5,
+	"db_path": "data",
+	"log_path": "logs",
+	"config_url": "http://localhost:8000/remote-config.json",
+	"targets": [
+		{
+			"name": "mousepad",
+			"limit": 220,
+			"pattern": "mousepad",
+			"kill": true,
+			"command": ""
+		}
+	],
+	"load_from_url": true
 }

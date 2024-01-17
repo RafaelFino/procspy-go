@@ -26,7 +26,8 @@ func NewSpy(config *Config) *Spy {
 }
 
 func (s *Spy) run(last time.Time) error {
-	err := s.Config.FromUrl()
+	// reload from web?
+	err := s.Config.UpdateFromUrl()
 	if err != nil {
 		log.Printf("Error loading config from url: %s", err)
 	}
@@ -49,6 +50,13 @@ func (s *Spy) run(last time.Time) error {
 	if s.currentDay != time.Now().Day() {
 		log.Printf("Resetting elapsed time for all processes, day changed")
 		s.currentDay = time.Now().Day()
+
+		//reload from web?
+		err = s.Config.UpdateFromUrl()
+		if err != nil {
+			log.Printf("Error loading config from url: %s", err)
+		}
+
 		for index, target := range s.Config.Targets {
 			log.Printf(" # [%s]Resetting elapsed time", target.GetName())
 			target.ResetElapsed()
@@ -92,7 +100,7 @@ func (s *Spy) run(last time.Time) error {
 				if target.GetKill() {
 					log.Printf(" >> [%s] Killing processes: %v", target.GetName(), pids)
 					s.kill(pids)
-					log.Printf(" >> [%s] Killed %d processes", target.GetName(), len(pids))
+					log.Printf(" >> [%s] %d processes terminated", target.GetName(), len(pids))
 				}
 
 				err = storage.InsertMatch(target.GetName(), target.GetPattern(), target.GetCommand(), target.GetKill())
@@ -121,8 +129,6 @@ func (s *Spy) kill(pids []int) {
 		return
 	}
 
-	log.Printf(" >> Killing processes: %v", pids)
-
 	for _, pid := range pids {
 		p, err := os.FindProcess(pid)
 		if err != nil {
@@ -136,13 +142,23 @@ func (s *Spy) kill(pids []int) {
 	}
 }
 
-func (s *Spy) Start() {
+func (s *Spy) Start(onUpdate chan bool) {
 	s.loadFromDatabase()
 
 	last := time.Now()
 	s.enabled = true
 
 	log.Printf("Starting with config %s", s.Config.ToJson())
+
+	go func() {
+		for {
+			select {
+			case <-onUpdate:
+				log.Printf("Spy: Config updated, reloading...")
+				s.loadFromDatabase()
+			}
+		}
+	}()
 
 	for s.enabled {
 		s.run(last)
@@ -177,6 +193,7 @@ func (s *Spy) loadFromDatabase() {
 
 	for index, target := range s.Config.Targets {
 		if elapsed, found := elapsed[target.GetName()]; found && elapsed > 0 {
+			target.ResetElapsed()
 			target.AddElapsed(elapsed)
 			log.Printf(" > [%s] Loaded %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
 			s.Config.Targets[index] = target

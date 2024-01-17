@@ -19,11 +19,15 @@ func main() {
 	}
 
 	configFile := os.Args[1]
+	onUpdate := make(chan bool, 1)
 
-	cfg := procspy.NewConfig()
-	cfg.LoadFromFile(configFile)
+	cfg, err := procspy.InitConfig(configFile, onUpdate)
+	if err != nil {
+		fmt.Printf("Error loading config file: %s", err)
+		os.Exit(1)
+	}
 
-	err := initLogger(cfg.LogPath)
+	err = initLogger(cfg.LogPath)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s, using stdout", err)
 		log.SetOutput(os.Stdout)
@@ -32,7 +36,7 @@ func main() {
 	fmt.Printf("%s\nStarting...", getLogo())
 
 	spy := procspy.NewSpy(cfg)
-	go spy.Start()
+	go spy.Start(onUpdate)
 	defer spy.Stop()
 
 	quitChannel := make(chan os.Signal, 1)

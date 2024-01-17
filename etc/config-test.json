@@ -3,13 +3,14 @@
     "log_path": "logs",  
     "interval": 5,
     "config_url": "https://rgt-tools.duckdns/config.json",
+    "load_from_url": false,
     "targets": [
         {
             "name": "calc",
             "limit": 20,
-            "pattern": "*calc*",
-            "kill": true
-
+            "pattern": "calc",
+            "kill": true,
+            "command": "mousepad"
         }
     ]
 }

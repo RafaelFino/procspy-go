@@ -57,6 +57,16 @@ func (t *Target) GetKill() bool {
 }
 
 func (t *Target) Match(command string) bool {
+	if t.regex == nil {
+		log.Printf("Trying to compile regex for target %s -> regex: [%s]", t.Name, t.Pattern)
+		t.regex = regexp.MustCompile(t.Pattern)
+	}
+
+	if t.regex == nil {
+		log.Printf("Error matching target %s: regex is nil", t.Name)
+		return false
+	}
+
 	return t.regex.MatchString(command)
 }
 

@@ -8,19 +8,19 @@
         {
             "name": "chrome",
             "limit": 7200,
-            "pattern": "*chrome*",
+            "pattern": "chrome",
             "kill": false
         },
         {
             "name": "firefox",
             "limit": 7200,
-            "pattern": "*firefox*",
+            "pattern": "firefox",
             "kill": false
         },
         {
             "name": "steam",
             "limit": 7200,
-            "pattern": "*steam*",
+            "pattern": "steam",
             "kill": false
         }
     ]

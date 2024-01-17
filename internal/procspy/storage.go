@@ -115,7 +115,7 @@ SELECT
 	name,
 	pattern,
 	command,
-	killed,
+	kill,
 	created_at
 FROM
 	match

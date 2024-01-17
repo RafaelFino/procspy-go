@@ -94,11 +94,6 @@ func (c *Config) FromJson(jsonString string) error {
 		return err
 	}
 
-	for _, target := range c.Targets {
-		target.FromJson(target.ToJson())
-		c.Targets = append(c.Targets, target)
-	}
-
 	return nil
 }
 

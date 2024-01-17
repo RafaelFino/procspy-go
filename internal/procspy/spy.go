@@ -85,7 +85,7 @@ func (s *Spy) run(last time.Time) error {
 		}
 
 		if match {
-			log.Printf(" > [%s] Match process with pattern %s -> [%v]", target.GetName(), target.GetPattern(), pids)
+			log.Printf(" > [%s] Match process with pattern %s -> %v", target.GetName(), target.GetPattern(), pids)
 			target.AddElapsed(elapsed)
 
 			err = storage.InsertProcess(target.GetName(), elapsed, target.GetPattern(), target.GetCommand(), target.GetKill())

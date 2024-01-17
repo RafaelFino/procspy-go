@@ -1,6 +1,18 @@
 {
 	"targets": [
 		{
+			"name": "steam",
+			"limit": 7200,
+			"pattern": "steam",
+			"kill": false
+		},
+		{
+			"name": "firefox",
+			"limit": 7200,
+			"pattern": "firefox",
+			"kill": false
+		},	
+		{
 			"name": "chrome",
 			"limit": 7200,
 			"pattern": "chrome",

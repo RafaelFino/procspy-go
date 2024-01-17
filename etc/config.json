@@ -2,15 +2,26 @@
     "db_path": "data",
     "log_path": "logs",  
     "interval": 60,
-    "targets": {
-        "chrome": {
-            "limit": 7200
+    "config_url": "https://rgt-tools.duckdns/config.json",
+    "load_from_url": false,
+    "targets": [
+        {
+            "name": "chrome",
+            "limit": 7200,
+            "pattern": "*chrome*",
+            "kill": false
         },
-        "firefox": {
-            "limit": 7200
+        {
+            "name": "firefox",
+            "limit": 7200,
+            "pattern": "*firefox*",
+            "kill": false
         },
-        "steam": {
-            "limit": 7200
+        {
+            "name": "steam",
+            "limit": 7200,
+            "pattern": "*steam*",
+            "kill": false
         }
-    }
+    ]
 }

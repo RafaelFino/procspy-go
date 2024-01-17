@@ -58,6 +58,9 @@ func (s *Storage) preapreDatabase() error {
 CREATE TABLE IF NOT EXISTS processes (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,                
 	name TEXT NOT NULL,
+	pattern TEXT NOT NULL,
+	command TEXT NOT NULL,
+	kill BOOLEAN DEFAULT FALSE,
 	elapsed REAL NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -65,19 +68,26 @@ CREATE TABLE IF NOT EXISTS processes (
 CREATE TABLE IF NOT EXISTS processes_old (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,                
 	name TEXT NOT NULL,
+	kill INTEGER DEFAULT 0,
 	elapsed REAL NOT NULL,
 	created_at DATETIME NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS killed (
+CREATE TABLE IF NOT EXISTS match (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	name TEXT NOT NULL,
+	pattern TEXT NOT NULL,
+	command TEXT NOT NULL,	
+	kill BOOLEAN DEFAULT FALSE,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS killed_old (
+CREATE TABLE IF NOT EXISTS match_old (
 	id INTEGER PRIMARY KEY,
 	name TEXT NOT NULL,
+	pattern TEXT NOT NULL,
+	command TEXT NOT NULL,
+	kill BOOLEAN DEFAULT FALSE,
 	created_at DATETIME NOT NULL
 );
 
@@ -85,7 +95,8 @@ INSERT INTO processes_old
 SELECT
 	min(id) id,
 	name, 
-	sum(elapsed) elapsed,
+	sum(kill) kill,
+	sum(elapsed) elapsed,	
 	date(created_at) created_at
 FROM 
 	processes 
@@ -98,17 +109,20 @@ ORDER BY
 
 DELETE FROM processes WHERE created_at < datetime('now', '-1 day');
 
-INSERT INTO killed_old
+INSERT INTO match_old
 SELECT
 	id,
 	name,
+	pattern,
+	command,
+	killed,
 	created_at
 FROM
-	killed
+	match
 WHERE created_at < datetime('now', '-1 day')
 ON CONFLICT DO NOTHING;
 
-DELETE FROM killed WHERE created_at < datetime('now', '-1 day');
+DELETE FROM match WHERE created_at < datetime('now', '-1 day');
 `
 	_, err := s.db.Exec(command)
 	if err != nil {
@@ -118,12 +132,25 @@ DELETE FROM killed WHERE created_at < datetime('now', '-1 day');
 	return err
 }
 
-func (s *Storage) InsertProcess(name string, elapsed float64) error {
-	const command string = `
-INSERT INTO processes (name, elapsed) VALUES (?, ?);`
-	_, err := s.db.Exec(command, name, elapsed)
+func (s *Storage) InsertProcess(name string, elapsed float64, pattern string, command string, kill bool) error {
+	const sql string = `
+INSERT INTO processes (name, elapsed, pattern, command, kill) VALUES (?, ?, ?, ?, ?);`
+	_, err := s.db.Exec(sql, name, elapsed, pattern, command, kill)
+
 	if err != nil {
 		log.Printf("Error inserting process: %s", err)
+	}
+
+	return err
+}
+
+func (s *Storage) InsertMatch(name string, pattern string, command string, kill bool) error {
+	const sql string = `
+INSERT INTO match (name, pattern, command, kill) VALUES (?, ?, ?, ?);`
+	_, err := s.db.Exec(sql, name, pattern, command, kill)
+
+	if err != nil {
+		log.Printf("Error inserting match: %s", err)
 	}
 
 	return err

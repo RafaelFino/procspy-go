@@ -1,0 +1,15 @@
+[Unit]
+Description=procspy monitor service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=30
+User=root
+ExecStart=/srv/procspy/start.sh
+Workdir=/srv/procspy
+
+[Install]
+WantedBy=multi-user.target

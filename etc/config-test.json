@@ -2,9 +2,14 @@
     "db_path": "data",
     "log_path": "logs",  
     "interval": 5,
-    "targets": {
-        "mate-calc": {
-            "limit": 20
+    "config_url": "https://rgt-tools.duckdns/config.json",
+    "targets": [
+        {
+            "name": "calc",
+            "limit": 20,
+            "pattern": "*calc*",
+            "kill": true
+
         }
-    }
+    ]
 }

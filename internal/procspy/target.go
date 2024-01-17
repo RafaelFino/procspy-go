@@ -3,18 +3,41 @@ package procspy
 import (
 	"encoding/json"
 	"log"
+	"regexp"
 )
 
 type Target struct {
+	Name    string  `json:"name"`
 	Elapsed float64 `json:"elapsed"`
 	Limit   float64 `json:"limit"`
+	Pattern string  `json:"pattern"`
+	Kill    bool    `json:"kill"`
+	Command string  `json:"command"`
+	regex   *regexp.Regexp
 }
 
-func NewTarget(limit float64) *Target {
+func NewTarget(name string, limit float64, pattern string, kill bool, command string) *Target {
 	return &Target{
+		Name:    name,
 		Elapsed: 0,
 		Limit:   limit,
+		Pattern: pattern,
+		Kill:    kill,
+		Command: command,
+		regex:   regexp.MustCompile(pattern),
 	}
+}
+
+func (t *Target) GetName() string {
+	return t.Name
+}
+
+func (t *Target) GetPattern() string {
+	return t.Pattern
+}
+
+func (t *Target) GetCommand() string {
+	return t.Command
 }
 
 func (t *Target) AddElapsed(elapsed float64) {
@@ -27,6 +50,14 @@ func (t *Target) GetElapsed() float64 {
 
 func (t *Target) GetLimit() float64 {
 	return t.Limit
+}
+
+func (t *Target) GetKill() bool {
+	return t.Kill
+}
+
+func (t *Target) Match(command string) bool {
+	return t.regex.MatchString(command)
 }
 
 func (t *Target) IsExpired() bool {

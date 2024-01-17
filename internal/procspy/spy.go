@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/mitchellh/go-ps"
@@ -25,6 +26,11 @@ func NewSpy(config *Config) *Spy {
 }
 
 func (s *Spy) run(last time.Time) error {
+	err := s.Config.FromUrl()
+	if err != nil {
+		log.Printf("Error loading config from url: %s", err)
+	}
+
 	storage, err := NewStorage(s.Config.DBPath)
 
 	if err != nil {
@@ -43,50 +49,68 @@ func (s *Spy) run(last time.Time) error {
 	if s.currentDay != time.Now().Day() {
 		log.Printf("Resetting elapsed time for all processes, day changed")
 		s.currentDay = time.Now().Day()
-		for name, limit := range s.Config.Targets {
-			log.Printf(" # [%s]Resetting elapsed time", name)
-			limit.ResetElapsed()
-			s.Config.Targets[name] = limit
+		for index, target := range s.Config.Targets {
+			log.Printf(" # [%s]Resetting elapsed time", target.GetName())
+			target.ResetElapsed()
+			s.Config.Targets[index] = target
 		}
 	}
 
-	targets := make(map[string][]int)
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 
 	if elapsed < float64(s.Config.Interval) {
 		return nil
 	}
 
-	for _, proc := range processes {
-		name := proc.Executable()
+	for index, target := range s.Config.Targets {
+		match := false
+		pids := make([]int, 0)
 
-		if _, found := s.Config.Targets[name]; found {
-			if _, found := targets[name]; !found {
-				targets[name] = make([]int, 0)
+		for _, proc := range processes {
+			name := proc.Executable()
+
+			if target.Match(name) {
+				match = true
+				pid := proc.Pid()
+				log.Printf(" > [%s] Match process [%s] with pattern %s -> [%d]", target.GetName(), name, target.GetPattern(), pid)
+				pids = append(pids, pid)
 			}
-			pids := targets[name]
-			pids = append(pids, proc.Pid())
-			targets[name] = pids
 		}
-	}
 
-	for name, pids := range targets {
-		if target, found := s.Config.Targets[name]; found {
+		if match {
 			target.AddElapsed(elapsed)
-			s.Config.Targets[name] = target
-			err = storage.InsertProcess(name, elapsed)
+
+			err = storage.InsertProcess(target.GetName(), elapsed, target.GetPattern(), target.GetCommand(), target.GetKill())
 			if err != nil {
-				log.Printf("Error inserting process %s: %s", name, err)
+				log.Printf(" [%s] Error inserting process: %s", target.GetName(), err)
 			}
 
-			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", name, elapsed, target.GetElapsed(), target.GetLimit())
+			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
 
 			if target.IsExpired() {
-				log.Printf(" >> [%s] Exceeded limit of %.2f seconds, terminate all processes...", name, target.GetLimit())
-				s.kill(pids)
-				log.Printf(" >> [%s] Killed %d processes", name, len(pids))
+				log.Printf(" >> [%s] Exceeded limit of %.2f seconds", target.GetName(), target.GetLimit())
+				if target.GetKill() {
+					log.Printf(" >> [%s] Killing processes: %v", target.GetName(), pids)
+					s.kill(pids)
+					log.Printf(" >> [%s] Killed %d processes", target.GetName(), len(pids))
+				}
+
+				err = storage.InsertMatch(target.GetName(), target.GetPattern(), target.GetCommand(), target.GetKill())
+				if err != nil {
+					log.Printf("[%s] Error inserting match: %s", target.GetName(), err)
+				}
+
+				if len(target.GetCommand()) > 0 {
+					log.Printf(" >> [%s] Executing command: %s", target.GetName(), target.GetCommand())
+					err = executeCommand(target.GetCommand())
+					if err != nil {
+						log.Printf(" [%s] Error executing command %s: %s", target.GetName(), target.GetCommand(), err)
+					}
+				}
 			}
 		}
+
+		s.Config.Targets[index] = target
 	}
 
 	return err
@@ -151,10 +175,11 @@ func (s *Spy) loadFromDatabase() {
 		return
 	}
 
-	for name, limit := range s.Config.Targets {
-		if elapsed, found := elapsed[name]; found && elapsed > 0 {
-			limit.AddElapsed(elapsed)
-			s.Config.Targets[name] = limit
+	for index, target := range s.Config.Targets {
+		if elapsed, found := elapsed[target.GetName()]; found && elapsed > 0 {
+			target.AddElapsed(elapsed)
+			log.Printf(" > [%s] Loaded %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
+			s.Config.Targets[index] = target
 		}
 	}
 }
@@ -162,4 +187,11 @@ func (s *Spy) loadFromDatabase() {
 func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
+}
+
+func executeCommand(command string) error {
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Stdout = log.Writer()
+	cmd.Stderr = log.Writer()
+	return cmd.Run()
 }

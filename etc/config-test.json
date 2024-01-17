@@ -5,6 +5,20 @@
 	"config_url": "http://rgt-tools.duckdns.org/api/public/dl/9ziyBW4A",
 	"targets": [
 		{
+			"name": "steam",
+			"limit": 7200,
+			"pattern": "steam",
+			"kill": false,
+			"command": ""
+		},
+		{
+			"name": "firefox",
+			"limit": 7200,
+			"pattern": "firefox",
+			"kill": false,
+			"command": ""
+		},
+		{
 			"name": "chrome",
 			"limit": 7200,
 			"pattern": "chrome",

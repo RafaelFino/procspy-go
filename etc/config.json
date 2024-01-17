@@ -2,7 +2,7 @@
     "db_path": "data",
     "log_path": "logs",  
     "interval": 60,
-    "config_url": "https://rgt-tools.duckdns/config.json",
+    "config_url": "http://rgt-tools.duckdns.org/api/public/dl/9ziyBW4A",
     "load_from_url": false,
     "targets": [
         {

@@ -3,7 +3,7 @@
 		{
 			"name": "games",
 			"limit": 10800,
-			"pattern": "roblox|steam",
+			"pattern": "roblox|steam|wine",
 			"kill": false
 		},	
 		{

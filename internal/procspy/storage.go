@@ -106,8 +106,8 @@ GROUP BY
 ORDER BY 
 	created_at DESC;
 
-
 DELETE FROM processes WHERE created_at < datetime('now', '-1 day');
+DELETE FROM processes_old WHERE created_at < datetime('now', '-60 day');
 
 INSERT INTO match_old
 SELECT
@@ -123,6 +123,7 @@ WHERE created_at < datetime('now', '-1 day')
 ON CONFLICT DO NOTHING;
 
 DELETE FROM match WHERE created_at < datetime('now', '-1 day');
+DELETE FROM match_old WHERE created_at < datetime('now', '-60 day');
 `
 	_, err := s.db.Exec(command)
 	if err != nil {

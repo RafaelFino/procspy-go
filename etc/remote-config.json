@@ -1,21 +1,21 @@
 {
 	"targets": [
 		{
-			"name": "steam",
-			"limit": 7200,
-			"pattern": "steam",
-			"kill": false
-		},
-		{
-			"name": "firefox",
-			"limit": 7200,
-			"pattern": "firefox",
+			"name": "games",
+			"limit": 10800,
+			"pattern": "roblox|steam",
 			"kill": false
 		},	
 		{
-			"name": "chrome",
-			"limit": 7200,
-			"pattern": "chrome",
+			"name": "browsers",
+			"limit": 10800,
+			"pattern": "chrome|firefox|opera|edge|iexplorer",
+			"kill": false
+		},
+		{
+			"name": "screen",
+			"limit": 28800,
+			"pattern": "NetworkManager|Xorg|init",
 			"kill": false
 		}
 	]

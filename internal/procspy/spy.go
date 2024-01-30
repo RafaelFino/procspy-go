@@ -58,7 +58,7 @@ func (s *Spy) run(last time.Time) error {
 		}
 
 		for index, target := range s.Config.Targets {
-			log.Printf(" # [%s]Resetting elapsed time", target.GetName())
+			log.Printf(" # [%s] Resetting elapsed time", target.GetName())
 			target.ResetElapsed()
 			s.Config.Targets[index] = target
 		}

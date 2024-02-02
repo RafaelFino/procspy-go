@@ -25,4 +25,3 @@ os=`go env GOOS`
 arch=`go env GOARCH`
 go build -o bin/$os-$arch/procspy cmd/procspy.go
 
-

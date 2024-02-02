@@ -2,21 +2,27 @@
 	"targets": [
 		{
 			"name": "games",
-			"limit": 10800,
-			"pattern": "roblox|steam|wine",
-			"kill": false
+			"limit": 7200,
+			"pattern": "roblox|steam|wine|cs.exe|hl.exe",
+			"kill": true
 		},	
 		{
 			"name": "browsers",
-			"limit": 10800,
+			"limit": 14400,
 			"pattern": "chrome|firefox|opera|edge|iexplorer",
-			"kill": false
+			"kill": true
 		},
 		{
 			"name": "screen",
-			"limit": 28800,
+			"limit": 18000,
 			"pattern": "NetworkManager|Xorg|init",
 			"kill": false
-		}
+		},
+		{
+			"name": "win-screen",
+			"limit": 18000,
+			"pattern": "explorer.exe",
+			"kill": false
+		}	
 	]
 }

@@ -7,15 +7,15 @@ if [ "$par" == "clean" ]; then
 fi
 
 if [ "$par" == "all" ]; then
-    archs=( "arm64" "amd64" )
-    oses=( "linux" "windows" "darwin" )
+    archs=( "amd64" )
+    oses=( "linux" "windows" )
 
     for os in "${oses[@]}"
     do
         for arch in "${archs[@]}"
         do
             echo "Building for $os $arch"
-            GOOS=$os GOARCH=$arch go build -o bin/$os-$arch/procspy cmd/procspy.go
+            GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy cmd/procspy.go
         done
     done
     exit 0    

@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -145,18 +146,26 @@ func (s *Server) createUser(c *gin.Context) {
 }
 
 func (s *Server) authenticate(c *gin.Context) {
-	auth, claims, err := s.validateToken(c)
+	user, err := s.getUserName(c)
 
-	if err != nil || !auth {
-		c.IndentedJSON(http.StatusUnauthorized, gin.H{
-			"error":     "unauthorized",
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"message":   "user not found",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
-
 		return
 	}
 
-	user, err := s.getUserName(c)
+	jsonData, err := io.ReadAll(c.Request.Body)
+
+	if err != nil {
+		log.Printf("[Server API] Error reading request body: %s", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"error":     "internal error",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return
+	}
 
 }
 

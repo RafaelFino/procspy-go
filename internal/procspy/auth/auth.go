@@ -136,3 +136,31 @@ func (a *Authorization) Validate(token string) (interface{}, error) {
 
 	return claims["dat"], nil
 }
+
+func (a *Authorization) Cypher(data string) (string, error) {
+	key, err := jwt.ParseRSAPublicKeyFromPEM(a.pubKey)
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] cypher: parse key: %w", err)
+	}
+
+	enc, err := rsa.EncryptPKCS1v15(rand.Reader, key, []byte(data))
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] cypher: encrypt: %w", err)
+	}
+
+	return string(enc), nil
+}
+
+func (a *Authorization) Decypher(data string) (string, error) {
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(a.key)
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] decypher: parse key: %w", err)
+	}
+
+	dec, err := rsa.DecryptPKCS1v15(rand.Reader, key, []byte(data))
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] decypher: decrypt: %w", err)
+	}
+
+	return string(dec), nil
+}

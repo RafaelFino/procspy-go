@@ -1,0 +1,5 @@
+{
+    "db_path": "data",
+    "log_path": "logs",  
+    "config_url": "http://rgt-tools.duckdns.org/api/public/dl/9ziyBW4A"
+}

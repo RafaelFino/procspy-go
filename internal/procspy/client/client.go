@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-type Config struct {
+type ClientConfig struct {
 	Interval    int      `json:"interval"`
 	DBPath      string   `json:"db_path"`
 	LogPath     string   `json:"log_path"`
@@ -26,7 +26,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	ret := &Config{
+	ret := &ClientConfig{
 		Interval:    60,
 		DBPath:      "data",
 		LogPath:     "logs",
@@ -63,10 +63,14 @@ func InitConfig(filename string, onUpdate chan bool) (*Config, error) {
 	err = ret.UpdateFromUrl()
 	ret.onUpdate = onUpdate
 
+	if err != nil {
+		log.Printf("Error updating from url: %s", err)
+	}
+
 	return ret, nil
 }
 
-func (c *Config) SaveToFile(filename string) error {
+func (c *ClientConfig) SaveToFile(filename string) error {
 	log.Printf("Saving config to file: %s", filename)
 
 	file, err := os.Create(filename)
@@ -85,7 +89,7 @@ func (c *Config) SaveToFile(filename string) error {
 	return nil
 }
 
-func (c *Config) ToJson() string {
+func (c *ClientConfig) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
 		log.Printf("Error marshalling config: %s", err)
@@ -94,7 +98,7 @@ func (c *Config) ToJson() string {
 	return string(ret)
 }
 
-func ConfigFromJson(jsonString string) (*Config, error) {
+func ConfigFromJson(jsonString string) (*ClientConfig, error) {
 	ret := NewConfig()
 	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
@@ -105,27 +109,27 @@ func ConfigFromJson(jsonString string) (*Config, error) {
 	return ret, nil
 }
 
-func (c *Config) GetRemoteCS() string {
+func (c *ClientConfig) GetRemoteCS() string {
 	return c.remoteCS
 }
 
-func (c *Config) SetRemoteCS(cs string) {
+func (c *ClientConfig) SetRemoteCS(cs string) {
 	c.remoteCS = cs
 }
 
-func (c *Config) GetLocalFile() string {
+func (c *ClientConfig) GetLocalFile() string {
 	return c.localFile
 }
 
-func (c *Config) SetLocalFile(filename string) {
+func (c *ClientConfig) SetLocalFile(filename string) {
 	c.localFile = filename
 }
 
-func (c *Config) calcCheckSum(data string) string {
+func (c *ClientConfig) calcCheckSum(data string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
 }
 
-func (c *Config) UpdateFromUrl() error {
+func (c *ClientConfig) UpdateFromUrl() error {
 	if !c.LoadFromUrl {
 		return nil
 	}
@@ -168,7 +172,7 @@ func (c *Config) UpdateFromUrl() error {
 	return nil
 }
 
-func (c *Config) downloadConfigFromURL() (string, error) {
+func (c *ClientConfig) downloadConfigFromURL() (string, error) {
 	// Get the data
 	resp, err := http.Get(c.ConfigUrl)
 	if err != nil {
@@ -193,10 +197,10 @@ func (c *Config) downloadConfigFromURL() (string, error) {
 	return buf.String(), err
 }
 
-func (c *Config) GetTargets() []Target {
+func (c *ClientConfig) GetTargets() []Target {
 	return c.Targets
 }
 
-func (c *Config) GetInterval() int {
+func (c *ClientConfig) GetInterval() int {
 	return c.Interval
 }

@@ -1,4 +1,4 @@
-package procspy
+package procspy_config
 
 import (
 	"log"

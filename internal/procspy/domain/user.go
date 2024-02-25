@@ -1,4 +1,4 @@
-package procspy_domains
+package domains
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ type User struct {
 	Key       string `json:"key"`
 	Approved  bool   `json:"approved"`
 	CreatedAt string `json:"created_at"`
-	Token     string `json:"token"`
+	Token     string `json:"token,omitempty"`
 }
 
 func NewUser(name string) *User {

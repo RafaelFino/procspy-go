@@ -5,12 +5,14 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	auth "procspy/internal/procspy/auth"
 	config "procspy/internal/procspy/config"
 	storage "procspy/internal/procspy/storage"
 
 	"github.com/gin-gonic/gin"
+	guuid "github.com/google/uuid"
 )
 
 type Server struct {
@@ -29,10 +31,7 @@ type Server struct {
 
 func NewServer(config *config.ServerConfig) *Server {
 	return &Server{
-		config:  config,
-		storage: NewServerStorage(config),
-		targets: NewServerTargets(config),
-		auth:    NewAuthorization(),
+		config: config,
 	}
 }
 
@@ -44,12 +43,13 @@ func (s *Server) Start() {
 
 	s.router = gin.Default()
 	s.router.GET("/key", s.getKey)
-	s.router.GET("/targets/:user", s.getTargets)
 	s.router.POST("/user/:user", s.createUser)
-	s.router.POST("/auth", s.authenticate)
-	s.router.POST("/process/:user", s.insertProcess)
+	s.router.POST("/auth/:user", s.authenticate)
+
+	s.router.GET("/targets/:user", s.getTargets)
 	s.router.POST("/match/:user", s.insertMatch)
-	s.router.GET("/elapsed/:user", s.getElapsed)
+	s.router.GET("/match/:user", s.getElapsed)
+	s.router.POST("/command/:user/:name", s.logCommand)
 
 	go func() {
 		s.router.Run(fmt.Sprintf("%s:%d", s.config.Host, s.config.Port))
@@ -57,6 +57,17 @@ func (s *Server) Start() {
 	}()
 
 	log.Print("Server started")
+}
+
+func (s *Server) getKey(c *gin.Context) {
+	key, err := s.auth.GetPubKey()
+	if err != nil {
+		log.Printf("[Server API] Error getting public key: %s", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"key": key})
 }
 
 func (s *Server) getUserName(c *gin.Context) (string, error) {
@@ -73,13 +84,13 @@ func (s *Server) getUserName(c *gin.Context) (string, error) {
 	return user, nil
 }
 
-func (s *Server) validateToken(c *gin.Context) (bool, error) {
+func (s *Server) validateToken(c *gin.Context) (bool, map[string]interface{}, error) {
 	token := c.Request.Header.Get("Authorization")
 
 	if token == "" {
 		log.Printf("[Server API] Unauthorized request")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return false, nil
+		return false, nil, nil
 	}
 
 	claims, err := s.auth.Validate(token)
@@ -87,75 +98,80 @@ func (s *Server) validateToken(c *gin.Context) (bool, error) {
 	if err != nil {
 		log.Printf("[Server API] Unauthorized request - error: %s", err)
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return false, err
+		return false, nil, err
 	}
 
 	if claims == nil {
 		log.Printf("[Server API] Unauthorized request - claims are nil")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return false, nil
+		return false, nil, nil
 	}
 
 	log.Printf("[Server API] Authorized request for %s", claims.(map[string]interface{})["sub"])
 
-	return true, nil
+	return true, claims.(map[string]interface{}), nil
 }
 
-func (s *Server) getKey(c *gin.Context) {
-	key, err := s.auth.GetPubKey()
+func (s *Server) createUser(c *gin.Context) {
+	user, err := s.getUserName(c)
+
 	if err != nil {
-		log.Printf("[Server API] Error getting public key: %s", err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"message":   "user not found",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"key": key})
-}
+	key := guuid.New().String()
+	err = s.userStorage.CreateUser(user, key)
 
-func (s *Server) getTargets(c *gin.Context) {
-	auth, err := s.validateToken(c)
 	if err != nil {
-		log.Printf("Error authorizing: %s", err)
+		log.Printf("[Server API] Error creating user: %s", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"error":     "internal error",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
 		return
 	}
 
-	if !auth {
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"message":   "user created",
+		"key":       key,
+		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+	})
+
+	log.Printf("[Server API] User %s created -> %s", user, key)
+}
+
+func (s *Server) authenticate(c *gin.Context) {
+	auth, claims, err := s.validateToken(c)
+
+	if err != nil || !auth {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"error":     "unauthorized",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+
 		return
 	}
 
 	user, err := s.getUserName(c)
-	if err != nil {
-		log.Printf("[Server API] Error getting user: %s", err)
-		return
-	}
 
-	targets, err := s.targets.GetTargets(user)
-	if err != nil {
-		log.Printf("[Server API] Error getting targets: %s", err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
-		return
-	}
-
-	log.Printf("[Server API] Targets for %s: %v", user, targets)
-	c.IndentedJSON(http.StatusOK, gin.H{"targets": targets})
 }
 
-func (s *Server) createUser(c *gin.Context) {
-	//user string, password string) (error, userKey)
-}
+func (s *Server) getTargets(c *gin.Context) {
 
-func (s *Server) authenticate(c *gin.Context) {
-	//userKey string, user string, password string) (string, error)
-}
-
-func (s *Server) insertProcess(c *gin.Context) {
-	//token string, name string, elapsed float64, pattern string, command string, kill bool) error
 }
 
 func (s *Server) insertMatch(c *gin.Context) {
-	//token string, name string, pattern string, command string, kill bool
+
 }
 
 func (s *Server) getElapsed(c *gin.Context) {
-	//token string) (map[string]float64, error)
+
+}
+
+func (s *Server) logCommand(c *gin.Context) {
+
 }

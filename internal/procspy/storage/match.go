@@ -1,29 +1,29 @@
-package procspy_storage
+package storage
 
 import (
 	"errors"
 	"log"
 )
 
-type MatchStorage struct {
+type Match struct {
 	conn *DbConnection
 }
 
-func NewMatchStorage(dbConn *DbConnection) *MatchStorage {
-	ret := &MatchStorage{
+func NewMatch(dbConn *DbConnection) *Match {
+	ret := &Match{
 		conn: dbConn,
 	}
 
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[MatchStorage] Error initializing storage: %s", err)
+		log.Printf("[Match] Error initializing storage: %s", err)
 	}
 
 	return ret
 }
 
-func (m *MatchStorage) Init() error {
+func (m *Match) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS matches (
 	id SERIAL PRIMARY KEY,
@@ -38,29 +38,29 @@ CREATE TABLE IF NOT EXISTS matches (
 	`
 
 	if m.conn == nil {
-		log.Printf("[MatchStorage] Error creating tables: db is nil")
+		log.Printf("[Match] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[MatchStorage] Error creating tables: %s", err)
+		log.Printf("[Match] Error creating tables: %s", err)
 	}
 
 	return err
 }
 
-func (m *MatchStorage) Close() error {
+func (m *Match) Close() error {
 	if m.conn == nil {
-		log.Printf("[MatchStorage] Database is already closed")
+		log.Printf("[Match] Database is already closed")
 		return nil
 	}
 
 	return m.conn.Close()
 }
 
-func (m *MatchStorage) InsertMatch(userID int, name string, pattern string, match string, elapsed float64) error {
+func (m *Match) InsertMatch(userID int, name string, pattern string, match string, elapsed float64) error {
 	insert := `
 INSERT INTO matches
 (
@@ -80,20 +80,20 @@ VALUES
 );`
 
 	if m.conn == nil {
-		log.Printf("[MatchStorage] Error logging match: db is nil")
+		log.Printf("[Match] Error logging match: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(insert)
 
 	if err != nil {
-		log.Printf("[MatchStorage] Error logging match: %s")
+		log.Printf("[Match] Error logging match: %s")
 	}
 
 	return err
 }
 
-func (m *MatchStorage) GetElapsed(userID int) (map[string]float64, error) {
+func (m *Match) GetElapsed(userID int) (map[string]float64, error) {
 	query := `
 SELECT
 	name,
@@ -111,14 +111,14 @@ ORDER BY
 	conn, err := m.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[MatchStorage] Error getting connection: %s", err)
+		log.Printf("[Match] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, userID)
 
 	if err != nil {
-		log.Printf("[MatchStorage] Error getting matches: %s", err)
+		log.Printf("[Match] Error getting matches: %s", err)
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ ORDER BY
 		err = rows.Scan(&name, &elapsed)
 
 		if err != nil {
-			log.Printf("[MatchStorage] Error scanning matches: %s", err)
+			log.Printf("[Match] Error scanning matches: %s", err)
 			return nil, err
 		}
 

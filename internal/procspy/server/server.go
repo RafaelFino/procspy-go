@@ -1,4 +1,4 @@
-package procspy
+package server
 
 import (
 	"fmt"
@@ -6,18 +6,28 @@ import (
 	"net/http"
 	"strings"
 
+	auth "procspy/internal/procspy/auth"
+	config "procspy/internal/procspy/config"
+	storage "procspy/internal/procspy/storage"
+
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	config  *ServerConfig
-	router  *gin.Engine
-	auth    *Authorization
-	storage *ServerStorage
-	targets *ServerTargets
+	router *gin.Engine
+
+	config *config.ServerConfig
+
+	auth *auth.Authorization
+
+	dbConn         *storage.DbConnection
+	CommandStorage *storage.Command
+	targetStorage  *storage.Target
+	userStorage    *storage.User
+	matchStorage   *storage.Match
 }
 
-func NewServer(config *ServerConfig) *Server {
+func NewServer(config *config.ServerConfig) *Server {
 	return &Server{
 		config:  config,
 		storage: NewServerStorage(config),

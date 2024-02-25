@@ -1,30 +1,31 @@
-package procspy_storage
+package storage
 
 import (
 	"fmt"
 	"log"
-	procspy_domains "procspy/internal/procspy/domain"
+
+	domain "procspy/internal/procspy/domain"
 )
 
-type TargetStorage struct {
+type Target struct {
 	conn *DbConnection
 }
 
-func NewTargetStorage(dbConn *DbConnection) *TargetStorage {
-	ret := &TargetStorage{
+func NewTarget(dbConn *DbConnection) *Target {
+	ret := &Target{
 		conn: dbConn,
 	}
 
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error initializing storage: %s", err)
+		log.Printf("[Storage.Target] Error initializing storage: %s", err)
 	}
 
 	return ret
 }
 
-func (t *TargetStorage) Init() error {
+func (t *Target) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS targets (     
 	user_id INT REFERENCES users(id),
@@ -43,65 +44,65 @@ CREATE TABLE IF NOT EXISTS targets (
 	`
 
 	if t.conn == nil {
-		log.Printf("[TargetStorage] Error creating tables: db is nil")
+		log.Printf("[Storage.Target] Error creating tables: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error creating tables: %s", err)
+		log.Printf("[Storage.Target] Error creating tables: %s", err)
 	}
 
 	return err
 }
 
-func (t *TargetStorage) Close() error {
+func (t *Target) Close() error {
 	if t.conn == nil {
-		log.Printf("[TargetStorage] Database is already closed")
+		log.Printf("[Storage.Target] Database is already closed")
 		return nil
 	}
 
 	return t.conn.Close()
 }
 
-func (t *TargetStorage) InsertTarget(target *procspy_domains.Target) error {
+func (t *Target) InsertTarget(target *domain.Target) error {
 	insert := `
 INSERT INTO targets (user_id, name, pattern, elapsed_cmd, check_cmd, warn_cmd, kill, so_source, limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 `
 	if t.conn == nil {
-		log.Printf("[TargetStorage] Error creating target: db is nil")
+		log.Printf("[Storage.Target] Error creating target: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(insert, target.UserID, target.Name, target.UserID, target.Name, target.Pattern, target.ElapsedCmd, target.CheckCmd, target.WarnCmd, target.Kill, target.SoSource, target.Limit)
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error creating target: %s", err)
+		log.Printf("[Storage.Target] Error creating target: %s", err)
 	}
 
 	return err
 }
 
-func (t *TargetStorage) DeleteTargets(userID int) error {
+func (t *Target) DeleteTargets(userID int) error {
 	delete := `
 DELETE FROM targets WHERE user_id = ?;	
 `
 	if t.conn == nil {
-		log.Printf("[TargetStorage] Error deleting targets: db is nil")
+		log.Printf("[Storage.Target] Error deleting targets: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(delete, userID)
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error deleting targets: %s", err)
+		log.Printf("[Storage.Target] Error deleting targets: %s", err)
 	}
 
 	return err
 }
 
-func (t *TargetStorage) GetTargets(userID int) (map[string]*procspy_domains.Target, error) {
+func (t *Target) GetTargets(userID int) (map[string]*domain.Target, error) {
 	query := `
 SELECT
 	name,
@@ -120,25 +121,25 @@ ORDER BY
 	name;
 `
 	if t.conn == nil {
-		log.Printf("[TargetStorage] Error getting targets: db is nil")
+		log.Printf("[Storage.Target] Error getting targets: db is nil")
 		return nil, fmt.Errorf("db is nil")
 	}
 
 	conn, err := t.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error getting connection: %s", err)
+		log.Printf("[Storage.Target] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, userID)
 
 	if err != nil {
-		log.Printf("[TargetStorage] Error getting targets: %s", err)
+		log.Printf("[Storage.Target] Error getting targets: %s", err)
 		return nil, err
 	}
 
-	ret := make(map[string]*procspy_domains.Target)
+	ret := make(map[string]*domain.Target)
 
 	for rows.Next() {
 		var name, pattern, elapsedCmd, checkCmd, warnCmd, soSource string
@@ -148,11 +149,11 @@ ORDER BY
 		err = rows.Scan(&name, &pattern, &elapsedCmd, &checkCmd, &warnCmd, &kill, &soSource, &limit)
 
 		if err != nil {
-			log.Printf("[TargetStorage] Error scanning targets: %s", err)
+			log.Printf("[Storage.Target] Error scanning targets: %s", err)
 			return nil, err
 		}
 
-		target := procspy_domains.NewTarget(name, limit, pattern, kill)
+		target := domain.NewTarget(name, limit, pattern, kill)
 		target.SetElapsedCommand(elapsedCmd)
 		target.SetCheckCommand(checkCmd)
 		target.SetWarnCommand(warnCmd)

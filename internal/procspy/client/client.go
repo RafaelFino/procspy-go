@@ -1,206 +1,214 @@
-package procspy
+package client
 
 import (
-	"bufio"
-	"crypto/md5"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
+	"math"
 	"os"
-	"strings"
+	"os/exec"
+	"time"
+
+	"github.com/mitchellh/go-ps"
+	_ "github.com/mitchellh/go-ps"
 )
 
-type ClientConfig struct {
-	Interval    int      `json:"interval"`
-	DBPath      string   `json:"db_path"`
-	LogPath     string   `json:"log_path"`
-	ConfigUrl   string   `json:"config_url"`
-	Targets     []Target `json:"targets"`
-	LoadFromUrl bool     `json:"load_from_url"`
-	localFile   string
-	remoteCS    string
-	onUpdate    chan bool
+type Spy struct {
+	Config     *Config
+	enabled    bool
+	currentDay int
 }
 
-func NewConfig() *Config {
-	ret := &ClientConfig{
-		Interval:    60,
-		DBPath:      "data",
-		LogPath:     "logs",
-		ConfigUrl:   "http://rgt-tools.duckdns/config.json",
-		Targets:     make([]Target, 0),
-		LoadFromUrl: false,
+func NewSpy(config *Config) *Spy {
+	return &Spy{
+		Config:     config,
+		enabled:    false,
+		currentDay: time.Now().Day(),
 	}
-
-	return ret
 }
 
-func InitConfig(filename string, onUpdate chan bool) (*Config, error) {
-	file, err := os.Open(filename)
+func (s *Spy) run(last time.Time) error {
+	// reload from web?
+	err := s.Config.UpdateFromUrl()
 	if err != nil {
-		log.Printf("Error opening file: %s", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	jsonString := ""
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		jsonString += scanner.Text()
+		log.Printf("Error loading config from url: %s", err)
 	}
 
-	ret, err := ConfigFromJson(jsonString)
-	if err != nil {
-		log.Printf("Error parsing json: %s", err)
-		return nil, err
-	}
-
-	ret.localFile = filename
-
-	err = ret.UpdateFromUrl()
-	ret.onUpdate = onUpdate
+	storage, err := NewStorage(s.Config.DBPath)
 
 	if err != nil {
-		log.Printf("Error updating from url: %s", err)
-	}
-
-	return ret, nil
-}
-
-func (c *ClientConfig) SaveToFile(filename string) error {
-	log.Printf("Saving config to file: %s", filename)
-
-	file, err := os.Create(filename)
-	if err != nil {
-		log.Printf("Error creating file: %s", err)
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(c.ToJson())
-	if err != nil {
-		log.Printf("Error writing to file: %s", err)
+		log.Printf("Error opening database: %s", err)
 		return err
 	}
 
-	return nil
-}
+	defer storage.Close()
 
-func (c *ClientConfig) ToJson() string {
-	ret, err := json.MarshalIndent(c, "", "\t")
+	processes, err := ps.Processes()
 	if err != nil {
-		log.Printf("Error marshalling config: %s", err)
+		log.Printf("Error getting processes: %s", err)
+		return err
 	}
 
-	return string(ret)
-}
+	if s.currentDay != time.Now().Day() {
+		log.Printf("Resetting elapsed time for all processes, day changed")
+		s.currentDay = time.Now().Day()
 
-func ConfigFromJson(jsonString string) (*ClientConfig, error) {
-	ret := NewConfig()
-	err := json.Unmarshal([]byte(jsonString), &ret)
-	if err != nil {
-		log.Printf("Error unmarshalling config: %s", err)
-		return nil, err
+		//reload from web?
+		err = s.Config.UpdateFromUrl()
+		if err != nil {
+			log.Printf("Error loading config from url: %s", err)
+		}
+
+		for index, target := range s.Config.Targets {
+			log.Printf(" # [%s] Resetting elapsed time", target.GetName())
+			target.ResetElapsed()
+			s.Config.Targets[index] = target
+		}
 	}
 
-	return ret, nil
-}
+	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 
-func (c *ClientConfig) GetRemoteCS() string {
-	return c.remoteCS
-}
-
-func (c *ClientConfig) SetRemoteCS(cs string) {
-	c.remoteCS = cs
-}
-
-func (c *ClientConfig) GetLocalFile() string {
-	return c.localFile
-}
-
-func (c *ClientConfig) SetLocalFile(filename string) {
-	c.localFile = filename
-}
-
-func (c *ClientConfig) calcCheckSum(data string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
-}
-
-func (c *ClientConfig) UpdateFromUrl() error {
-	if !c.LoadFromUrl {
+	if elapsed < float64(s.Config.Interval) {
 		return nil
 	}
 
-	jsonString, err := c.downloadConfigFromURL()
-	if err != nil {
-		log.Printf("Error downloading config: %s", err)
-		return err
+	for index, target := range s.Config.Targets {
+		match := false
+		pids := make([]int, 0)
+
+		for _, proc := range processes {
+			name := proc.Executable()
+
+			if target.Match(name) {
+				match = true
+				pid := proc.Pid()
+				pids = append(pids, pid)
+			}
+		}
+
+		if match {
+			log.Printf(" > [%s] Match process with pattern %s -> %v", target.GetName(), target.GetPattern(), pids)
+			target.AddElapsed(elapsed)
+
+			err = storage.InsertProcess(target.GetName(), elapsed, target.GetPattern(), target.GetCommand(), target.GetKill())
+			if err != nil {
+				log.Printf(" [%s] Error inserting process: %s", target.GetName(), err)
+			}
+
+			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
+
+			if target.IsExpired() {
+				log.Printf(" >> [%s] Exceeded limit of %.2f seconds", target.GetName(), target.GetLimit())
+				if target.GetKill() {
+					log.Printf(" >> [%s] Killing processes: %v", target.GetName(), pids)
+					s.kill(pids)
+					log.Printf(" >> [%s] %d processes terminated", target.GetName(), len(pids))
+				}
+
+				err = storage.InsertMatch(target.GetName(), target.GetPattern(), target.GetCommand(), target.GetKill())
+				if err != nil {
+					log.Printf("[%s] Error inserting match: %s", target.GetName(), err)
+				}
+
+				if len(target.GetCommand()) > 0 {
+					log.Printf(" >> [%s] Executing command: %s", target.GetName(), target.GetCommand())
+					err = executeCommand(target.GetCommand())
+					if err != nil {
+						log.Printf(" [%s] Error executing command %s: %s", target.GetName(), target.GetCommand(), err)
+					}
+				}
+			}
+		}
+
+		s.Config.Targets[index] = target
 	}
 
-	remoteCS := c.calcCheckSum(jsonString)
-	if remoteCS != c.GetRemoteCS() {
-		data := make(map[string][]Target, 0)
-		err = json.Unmarshal([]byte(jsonString), &data)
+	return err
+}
+
+func (s *Spy) kill(pids []int) {
+	if pids == nil || len(pids) == 0 {
+		return
+	}
+
+	for _, pid := range pids {
+		p, err := os.FindProcess(pid)
 		if err != nil {
-			log.Printf("Error unmarshalling config: %s from %s", err, jsonString)
-			return err
+			log.Printf(" >> Process %d not found: %s", pid, err)
+		} else {
+			err = p.Kill()
+			if err != nil {
+				log.Printf(" >> Warn: killing process %d: %s", pid, err)
+			}
 		}
-
-		c.Targets = make([]Target, 0)
-
-		for _, target := range data["targets"] {
-			c.Targets = append(c.Targets, target)
-			log.Printf("Updating target %s", target.GetName())
-		}
-
-		err = c.SaveToFile(c.GetLocalFile())
-		if err != nil {
-			log.Printf("Error saving config: %s", err)
-			return err
-		}
-
-		c.SetRemoteCS(remoteCS)
-		log.Printf("Config updated from url: [%s]\n%s", remoteCS, c.ToJson())
-		go func() {
-			c.onUpdate <- true
-		}()
 	}
-
-	return nil
 }
 
-func (c *ClientConfig) downloadConfigFromURL() (string, error) {
-	// Get the data
-	resp, err := http.Get(c.ConfigUrl)
+func (s *Spy) Start(onUpdate chan bool) {
+	s.loadFromDatabase()
+
+	last := time.Now()
+	s.enabled = true
+
+	log.Printf("Starting with config %s", s.Config.ToJson())
+
+	go func() {
+		for {
+			select {
+			case <-onUpdate:
+				log.Printf("Spy: Config updated, reloading...")
+				s.loadFromDatabase()
+			}
+		}
+	}()
+
+	for s.enabled {
+		s.run(last)
+		last = time.Now()
+		time.Sleep(time.Duration(s.Config.Interval) * time.Second)
+	}
+}
+
+func (s *Spy) Stop() {
+	s.enabled = false
+}
+
+func (s *Spy) IsEnabled() bool {
+	return s.enabled
+}
+
+func (s *Spy) loadFromDatabase() {
+	storage, err := NewStorage(s.Config.DBPath)
+
 	if err != nil {
-		log.Printf("Error downloading config: %s", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	buf := new(strings.Builder)
-	n, err := io.Copy(buf, resp.Body)
-
-	if n == 0 {
-		log.Printf("Error downloading config: %d bytes read: %s", n, err)
-		return "", errors.New("No data read")
+		log.Printf("Error opening database: %s", err)
+		return
 	}
 
+	defer storage.Close()
+
+	elapsed, err := storage.GetElapsed()
 	if err != nil {
-		log.Printf("Error downloading config: %s", err)
-		return "", err
+		log.Printf("Error getting elapsed: %s", err)
+		return
 	}
 
-	return buf.String(), err
+	for index, target := range s.Config.Targets {
+		if elapsed, found := elapsed[target.GetName()]; found && elapsed > 0 {
+			target.ResetElapsed()
+			target.AddElapsed(elapsed)
+			log.Printf(" > [%s] Loaded %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
+			s.Config.Targets[index] = target
+		}
+	}
 }
 
-func (c *ClientConfig) GetTargets() []Target {
-	return c.Targets
+func roundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }
 
-func (c *ClientConfig) GetInterval() int {
-	return c.Interval
+func executeCommand(command string) error {
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Stdout = log.Writer()
+	cmd.Stderr = log.Writer()
+	return cmd.Run()
 }

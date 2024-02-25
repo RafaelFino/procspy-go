@@ -1,30 +1,30 @@
-package procspy_storage
+package storage
 
 import (
 	"errors"
 	"log"
-	procspy_domains "procspy/internal/procspy/domain"
+	domain "procspy/internal/procspy/domain"
 )
 
-type UserStorage struct {
+type User struct {
 	conn *DbConnection
 }
 
-func NewUserStorage(dbConn *DbConnection) *UserStorage {
-	ret := &UserStorage{
+func NewUser(dbConn *DbConnection) *User {
+	ret := &User{
 		conn: dbConn,
 	}
 
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[UserStorage] Error initializing storage: %s", err)
+		log.Printf("[Storage.User] Error initializing storage: %s", err)
 	}
 
 	return ret
 }
 
-func (u *UserStorage) Init() error {
+func (u *User) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS users (
 	id SERIAL PRIMARY KEY,
@@ -36,47 +36,47 @@ CREATE TABLE IF NOT EXISTS users (
 );
 `
 	if u.conn == nil {
-		log.Printf("[UserStorage] Error creating tables: db is nil")
+		log.Printf("[Storage.User] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := u.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[UserStorage] Error creating tables: %s", err)
+		log.Printf("[Storage.User] Error creating tables: %s", err)
 	}
 
 	return err
 }
 
-func (u *UserStorage) Close() error {
+func (u *User) Close() error {
 	if u.conn == nil {
-		log.Printf("[UserStorage] Database is already closed")
+		log.Printf("[Storage.User] Database is already closed")
 		return nil
 	}
 
 	return u.conn.Close()
 }
 
-func (u *UserStorage) CreateUser(name string, key string) error {
+func (u *User) CreateUser(name string, key string) error {
 	insert := `
 INSERT INTO users (name, key) VALUES (?, ?)
 `
 	if u.conn == nil {
-		log.Printf("[UserStorage] Error creating user: db is nil")
+		log.Printf("[Storage.User] Error creating user: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := u.conn.Exec(insert, name, key)
 
 	if err != nil {
-		log.Printf("[UserStorage] Error creating user: %s", err)
+		log.Printf("[Storage.User] Error creating user: %s", err)
 	}
 
 	return err
 }
 
-func (u *UserStorage) GetUserById(id int) (*procspy_domains.User, error) {
+func (u *User) GetUserById(id int) (*domain.User, error) {
 	query := `
 SELECT
 	id,
@@ -94,7 +94,7 @@ LIMIT 1;
 	return u.loadUser(query, id)
 }
 
-func (u *UserStorage) GetUser(name string) (*procspy_domains.User, error) {
+func (u *User) GetUser(name string) (*domain.User, error) {
 	query := `
 SELECT
 	id,
@@ -112,21 +112,21 @@ LIMIT 1;
 	return u.loadUser(query, name)
 }
 
-func (u *UserStorage) loadUser(query string, args ...interface{}) (*procspy_domains.User, error) {
+func (u *User) loadUser(query string, args ...interface{}) (*domain.User, error) {
 	if u.conn == nil {
-		log.Printf("[UserStorage] Error getting user: db is nil")
+		log.Printf("[Storage.User] Error getting user: db is nil")
 		return nil, errors.New("db is nil")
 	}
 
 	conn, err := u.conn.GetConn()
 	if err != nil {
-		log.Printf("[UserStorage] Error getting connection: %s", err)
+		log.Printf("[Storage.User] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, args...)
 	if err != nil {
-		log.Printf("[UserStorage] Error getting user: %s", err)
+		log.Printf("[Storage.User] Error getting user: %s", err)
 		return nil, err
 	}
 
@@ -141,14 +141,14 @@ func (u *UserStorage) loadUser(query string, args ...interface{}) (*procspy_doma
 
 		err = rows.Scan(&id, &name, &key, &approved, &createdAt)
 
-		user := *procspy_domains.NewUser(name)
+		user := *domain.NewUser(name)
 		user.SetId(id)
 		user.SetKey(key)
 		user.SetApproved(approved)
 		user.SetCreatedAt(createdAt)
 
 		if err != nil {
-			log.Printf("[UserStorage] Error scanning user: %s", err)
+			log.Printf("[Storage.User] Error scanning user: %s", err)
 			return nil, err
 		}
 

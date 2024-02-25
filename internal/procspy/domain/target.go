@@ -1,4 +1,4 @@
-package procspy_domains
+package domains
 
 import (
 	"encoding/json"
@@ -12,11 +12,11 @@ type Target struct {
 	Pattern    string  `json:"pattern"`
 	Elapsed    float64 `json:"elapsed,omitempty"`
 	Limit      float64 `json:"limit"`
+	Kill       bool    `json:"kill"`
+	SoSource   string  `json:"so_source,omitempty"`
 	CheckCmd   string  `json:"check_cmd,omitempty"`
 	WarnCmd    string  `json:"warn_cmd,omitempty"`
 	ElapsedCmd string  `json:"elapsed_cmd,omitempty"`
-	Kill       bool    `json:"kill"`
-	SoSource   string  `json:"so_source,omitempty"`
 	regex      *regexp.Regexp
 }
 
@@ -143,7 +143,7 @@ func (t *Target) ToJson() string {
 }
 
 func TargetFromJson(jsonString string) (*Target, error) {
-	ret := NewTarget("", 0, "", false, "")
+	ret := NewTarget("", 0, "", false)
 	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
 		log.Printf("[Target] Error unmarshalling target: %s", err)

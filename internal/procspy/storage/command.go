@@ -1,29 +1,29 @@
-package procspy_storage
+package storage
 
 import (
 	"errors"
 	"log"
 )
 
-type CommandStorage struct {
+type Command struct {
 	conn *DbConnection
 }
 
-func NewCommandStorage(dbConn *DbConnection) *CommandStorage {
-	ret := &CommandStorage{
+func NewCommand(dbConn *DbConnection) *Command {
+	ret := &Command{
 		conn: dbConn,
 	}
 
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[CommandStorage] Error initializing storage: %s", err)
+		log.Printf("[Command] Error initializing storage: %s", err)
 	}
 
 	return ret
 }
 
-func (c *CommandStorage) Init() error {
+func (c *Command) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS command_log (
 	id SERIAL PRIMARY KEY,
@@ -37,29 +37,29 @@ CREATE TABLE IF NOT EXISTS command_log (
 	`
 
 	if c.conn == nil {
-		log.Printf("[CommandStorage] Error creating tables: db is nil")
+		log.Printf("[Command] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := c.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[CommandStorage] Error creating tables: %s", err)
+		log.Printf("[Command] Error creating tables: %s", err)
 	}
 
 	return err
 }
 
-func (c *CommandStorage) Close() error {
+func (c *Command) Close() error {
 	if c.conn == nil {
-		log.Printf("[CommandStorage] Database is already closed")
+		log.Printf("[Command] Database is already closed")
 		return nil
 	}
 
 	return c.conn.Close()
 }
 
-func (c *CommandStorage) LogCommand(userID int, name string, commandType string, command string, commandReturn string) error {
+func (c *Command) LogCommand(userID int, name string, commandType string, command string, commandReturn string) error {
 	insert := `
 INSERT INTO command_log 
 (
@@ -77,14 +77,14 @@ VALUES
 	?
 );`
 	if c.conn == nil {
-		log.Printf("[CommandStorage] Error logging command: db is nil")
+		log.Printf("[Command] Error logging command: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := c.conn.Exec(insert, userID, name, commandType, command, commandReturn)
 
 	if err != nil {
-		log.Printf("[CommandStorage] Error logging command: %s")
+		log.Printf("[Command] Error logging command: %s")
 	}
 
 	return err

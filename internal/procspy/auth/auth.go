@@ -1,4 +1,4 @@
-package procspy_auth
+package auth
 
 import (
 	"crypto/rand"

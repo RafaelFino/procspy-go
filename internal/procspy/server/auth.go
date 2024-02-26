@@ -26,7 +26,7 @@ func NewAuth(auth *auth.Authorization, dbConn *storage.DbConnection) *Auth {
 }
 
 func (a *Auth) GetPubKey() (c *gin.Context) {
-	key, err := s.auth.GetPubKey()
+	key, err := a.auth.GetPubKey()
 	if err != nil {
 		log.Printf("[Server API] Error getting public key: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{

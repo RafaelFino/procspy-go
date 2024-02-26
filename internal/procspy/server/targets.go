@@ -17,12 +17,12 @@ type Target struct {
 
 func NewTarget(auth *Auth, dbConn *storage.DbConnection) *Target {
 	return &Target{
-		auth:          auth,
-		targetStorage: storage.NewTarget(dbConn),
+		auth:    auth,
+		storage: storage.NewTarget(dbConn),
 	}
 }
 
-func (t *Target) getTargets(c *gin.Context) {
+func (t *Target) GetTargets(c *gin.Context) {
 	user, err := t.auth.Validate(c)
 
 	if err != nil {

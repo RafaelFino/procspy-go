@@ -6,18 +6,21 @@ import (
 	"net/http"
 	"procspy/internal/procspy"
 	auth "procspy/internal/procspy/auth"
+	"procspy/internal/procspy/storage"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Auth struct {
-	auth *auth.Authorization
+	auth        *auth.Authorization
+	userStorage *storage.User
 }
 
-func NewAuth() *Auth {
+func NewAuth(auth *auth.Authorization, userStorage *storage.User) *Auth {
 	return &Auth{
-		auth: auth.NewAuthorization(),
+		auth:        auth,
+		userStorage: userStorage,
 	}
 }
 
@@ -41,7 +44,7 @@ func (a *Auth) GetPubKey() (c *gin.Context) {
 }
 
 func (a *Auth) Authenticate(c *gin.Context) {
-	body, err := procspy.ReadCypherBody(c)
+	body, err := procspy.ReadCypherBody(c, a.auth)
 
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
@@ -84,7 +87,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 		return
 	}
 
-	user, err := s.userStorage.GetUser(requestUser)
+	user, err := a.userStorage.GetUser(requestUser)
 
 	if err != nil {
 		log.Printf("[Server API] Error getting user: %s", err)

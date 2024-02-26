@@ -20,7 +20,7 @@ type ClientConfig struct {
 	ConfigUrl   string `json:"config_url"`
 	LoadFromUrl bool   `json:"load_from_url"`
 	Targets     []domain.Target
-	localFile   strisng
+	localFile   string
 	remoteCS    string
 	onUpdate    chan bool
 }

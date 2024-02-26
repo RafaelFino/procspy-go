@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"procspy/internal/procspy"
 	auth "procspy/internal/procspy/auth"
+	"procspy/internal/procspy/domain"
 	"procspy/internal/procspy/storage"
 	"time"
 
@@ -17,10 +18,10 @@ type Auth struct {
 	userStorage *storage.User
 }
 
-func NewAuth(auth *auth.Authorization, userStorage *storage.User) *Auth {
+func NewAuth(auth *auth.Authorization, dbConn *storage.DbConnection) *Auth {
 	return &Auth{
 		auth:        auth,
-		userStorage: userStorage,
+		userStorage: storage.NewUser(dbConn),
 	}
 }
 
@@ -41,6 +42,10 @@ func (a *Auth) GetPubKey() (c *gin.Context) {
 	})
 
 	return
+}
+
+func (a *Auth) GetAuth() *auth.Authorization {
+	return a.auth
 }
 
 func (a *Auth) Authenticate(c *gin.Context) {
@@ -133,7 +138,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	log.Printf("[Server API] User %s authenticated", requestUser)
 }
 
-func (a *Auth) Validate(c *gin.Context) (map[string]string, error) {
+func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	token := c.Request.Header.Get("Authorization")
 
 	if token == "" {
@@ -174,5 +179,47 @@ func (a *Auth) Validate(c *gin.Context) (map[string]string, error) {
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	return content, nil
+	user, ok := content["user"]
+
+	if !ok || user == "" {
+		log.Printf("[Server API] Unauthorized request - invalid user")
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"error":     "unauthorized",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	userData, err := u.storage.GetUser(user)
+
+	if err != nil {
+		log.Printf("[Server API] Error loading user: %s", err)
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"error":     "internal error",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return nil, fmt.Errorf("internal error")
+	}
+
+	if !userData.GetApproved() {
+		log.Printf("[Server API] Unauthorized request - user not approved")
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"error":     "unauthorized",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if key, ok := content["key"]; !ok || key == "" || userData.GetKey() != key {
+		log.Printf("[Server API] Unauthorized request - invalid key")
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"error":     "unauthorized",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	log.Printf("[Server API] Authorized request for %s", user)
+
+	return userData, nil
 }

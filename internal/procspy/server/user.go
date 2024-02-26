@@ -17,8 +17,10 @@ type User struct {
 	storage *storage.User
 }
 
-func NewUser() *User {
-	return &User{}
+func NewUser(dbConn *storage.DbConnection) *User {
+	return &User{
+		storage: storage.NewUser(dbConn),
+	}
 }
 
 func (u *User) CreateUser(c *gin.Context) {

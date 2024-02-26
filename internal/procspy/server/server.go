@@ -18,10 +18,11 @@ type Server struct {
 	config *config.ServerConfig
 
 	dbConn         *storage.DbConnection
-	CommandStorage *storage.Command
-	targetStorage  *storage.Target
-	userStorage    *storage.User
-	matchStorage   *storage.Match
+	authService    *Auth
+	userService    *User
+	commandService *Command
+	targetService  *Target
+	matchService   *Match
 }
 
 func NewServer(config *config.ServerConfig) *Server {
@@ -55,7 +56,7 @@ func (s *Server) Start() {
 }
 
 func (s *Server) getTargets(c *gin.Context) {
-	content, err := s.validate(c)
+	content, err := s.auth.V
 
 	if err != nil {
 		log.Printf("[Server API] getTargets -> Error validating request: %s", err)

@@ -1,8 +1,16 @@
 package procspy
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
+	"procspy/internal/procspy/auth"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func LoadFile(path string) (string, error) {
@@ -41,4 +49,52 @@ func WriteFile(path, data string) error {
 	}
 
 	return nil
+}
+
+func GetRequestParam(c *gin.Context, param string) (string, error) {
+	ret := c.Param(param)
+
+	if ret == "" {
+		log.Printf("[GetRequestParam] %s is empty", param)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "param not found"})
+		return "", fmt.Errorf("param not found")
+	}
+
+	ret = strings.ReplaceAll(ret, "//", "")
+
+	return ret, nil
+}
+
+func ReadCypherBody(c *gin.Context, auth *auth.Authorization) (map[string]interface{}, error) {
+	ret := make(map[string]interface{}, 0)
+
+	data, err := io.ReadAll(c.Request.Body)
+
+	if err != nil {
+		log.Printf("[ReadCypherBody] Error reading request body: %s", err)
+		return ret, err
+	}
+
+	jsonData, err := auth.Decypher(string(data))
+
+	if err != nil {
+		log.Printf("[ReadCypherBody] Error decyphering request body: %s", err)
+		return ret, err
+	}
+
+	err = json.Unmarshal([]byte(jsonData), &ret)
+
+	if err != nil {
+		log.Printf("[ReadCypherBody] Error parsing request body: %s", err)
+	}
+
+	return ret, err
+}
+
+func GetUser(c *gin.Context) (string, error) {
+	return GetRequestParam(c, "user")
+}
+
+func GeName(c *gin.Context) (string, error) {
+	return GetRequestParam(c, "name")
 }

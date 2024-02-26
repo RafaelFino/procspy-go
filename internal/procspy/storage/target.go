@@ -68,14 +68,14 @@ func (t *Target) Close() error {
 
 func (t *Target) InsertTarget(target *domain.Target) error {
 	insert := `
-INSERT INTO targets (user_id, name, pattern, elapsed_cmd, check_cmd, warn_cmd, kill, so_source, limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO targets (user, name, pattern, elapsed_cmd, check_cmd, warn_cmd, kill, so_source, limit)
 `
 	if t.conn == nil {
 		log.Printf("[Storage.Target] Error creating target: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
-	err := t.conn.Exec(insert, target.UserID, target.Name, target.UserID, target.Name, target.Pattern, target.ElapsedCmd, target.CheckCmd, target.WarnCmd, target.Kill, target.SoSource, target.Limit)
+	err := t.conn.Exec(insert, target.GetUser(), target.GetName(), target.GetPattern(), target.GetElapsedCommand(), target.GetCheckCommand(), target.GetWarnCommand(), target.GetKill(), target.GetSoSource(), target.GetLimit())
 
 	if err != nil {
 		log.Printf("[Storage.Target] Error creating target: %s", err)
@@ -84,16 +84,16 @@ INSERT INTO targets (user_id, name, pattern, elapsed_cmd, check_cmd, warn_cmd, k
 	return err
 }
 
-func (t *Target) DeleteTargets(userID int) error {
+func (t *Target) DeleteTargets(user string) error {
 	delete := `
-DELETE FROM targets WHERE user_id = ?;	
+DELETE FROM targets WHERE user = ?;	
 `
 	if t.conn == nil {
 		log.Printf("[Storage.Target] Error deleting targets: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
-	err := t.conn.Exec(delete, userID)
+	err := t.conn.Exec(delete, user)
 
 	if err != nil {
 		log.Printf("[Storage.Target] Error deleting targets: %s", err)
@@ -132,7 +132,7 @@ ORDER BY
 		return nil, err
 	}
 
-	rows, err := conn.Query(query, userID)
+	rows, err := conn.Query(query, user)
 
 	if err != nil {
 		log.Printf("[Storage.Target] Error getting targets: %s", err)

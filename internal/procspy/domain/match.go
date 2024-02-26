@@ -1,4 +1,4 @@
-package procspy_domains
+package domain
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 )
 
 type Match struct {
-	ID        int       `json:"id"`
+	User      string    `json:"user"`
 	When      time.Time `json:"when"`
 	UserID    int       `json:"user_id"`
 	Name      string    `json:"name"`
@@ -17,10 +17,10 @@ type Match struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func NewMatch(userId int, name string, pattern string, match string, elapsed float64) *Match {
+func NewMatch(user string, name string, pattern string, match string, elapsed float64) *Match {
 	return &Match{
+		User:      user,
 		Name:      name,
-		UserID:    userId,
 		Pattern:   pattern,
 		Match:     match,
 		Elapsed:   elapsed,
@@ -29,20 +29,12 @@ func NewMatch(userId int, name string, pattern string, match string, elapsed flo
 	}
 }
 
-func (m *Match) SetID(id int) {
-	m.ID = id
+func (m *Match) SetUser(user string) {
+	m.User = user
 }
 
-func (m *Match) GetID() int {
-	return m.ID
-}
-
-func (m *Match) SetUserID(id int) {
-	m.UserID = id
-}
-
-func (m *Match) GetUserID() int {
-	return m.UserID
+func (m *Match) GetUser() string {
+	return m.User
 }
 
 func (m *Match) GetName() string {

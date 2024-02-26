@@ -1,4 +1,4 @@
-package procspy_domains
+package domain
 
 import (
 	"encoding/json"

@@ -14,12 +14,10 @@ import (
 )
 
 type ClientConfig struct {
-	Interval    int      `json:"interval"`
-	DBPath      string   `json:"db_path"`
-	LogPath     string   `json:"log_path"`
-	ConfigUrl   string   `json:"config_url"`
-	Targets     []Target `json:"targets"`
-	LoadFromUrl bool     `json:"load_from_url"`
+	Interval    int    `json:"interval"`
+	LogPath     string `json:"log_path"`
+	ConfigUrl   string `json:"config_url"`
+	LoadFromUrl bool   `json:"load_from_url"`
 	localFile   string
 	remoteCS    string
 	onUpdate    chan bool

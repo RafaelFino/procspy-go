@@ -28,7 +28,7 @@ func NewTarget(dbConn *DbConnection) *Target {
 func (t *Target) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS targets (     
-	user_id INT REFERENCES users(id),
+	user varchar(128) REFERENCES users(id),
 	name varchar(128) NOT NULL,
 	pattern TEXT NOT NULL,
 	elapsed_cmd TEXT NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS targets (
 	so_source TEXT DEFAULT NULL,
 	limit REAL NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP(),
-	PRIMARY KEY (user_id, name)
+	PRIMARY KEY (user, name)
 );	
 	`
 
@@ -102,7 +102,7 @@ DELETE FROM targets WHERE user_id = ?;
 	return err
 }
 
-func (t *Target) GetTargets(userID int) (map[string]*domain.Target, error) {
+func (t *Target) GetTargets(user string) (map[string]*domain.Target, error) {
 	query := `
 SELECT
 	name,
@@ -116,7 +116,7 @@ SELECT
 FROM
 	targets
 WHERE
-	user_id = ?;
+	user = ?;
 ORDER BY
 	name;
 `
@@ -153,12 +153,11 @@ ORDER BY
 			return nil, err
 		}
 
-		target := domain.NewTarget(name, limit, pattern, kill)
+		target := domain.NewTarget(user, name, limit, pattern, kill)
 		target.SetElapsedCommand(elapsedCmd)
 		target.SetCheckCommand(checkCmd)
 		target.SetWarnCommand(warnCmd)
 		target.SetSoSource(soSource)
-		target.SetUserID(userID)
 
 		ret[name] = target
 	}

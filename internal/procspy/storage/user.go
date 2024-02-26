@@ -27,12 +27,10 @@ func NewUser(dbConn *DbConnection) *User {
 func (u *User) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS users (
-	id SERIAL PRIMARY KEY,
-	name varchar(128) NOT NULL,
+	name varchar(128) PRIMARY KEY NOT NULL,
 	key TEXT DEFAULT NULL,
 	approved BOOLEAN DEFAULT FALSE,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP()
-	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP()
 );
 `
 	if u.conn == nil {
@@ -76,29 +74,9 @@ INSERT INTO users (name, key) VALUES (?, ?)
 	return err
 }
 
-func (u *User) GetUserById(id int) (*domain.User, error) {
-	query := `
-SELECT
-	id,
-	name,
-	key,
-	approved,
-	created_at
-FROM
-	users
-WHERE
-	id = ?
-ORDER BY created_at DESC
-LIMIT 1;
-`
-	return u.loadUser(query, id)
-}
-
 func (u *User) GetUser(name string) (*domain.User, error) {
 	query := `
 SELECT
-	id,
-	name,
 	key,
 	approved,
 	created_at
@@ -109,10 +87,6 @@ WHERE
 ORDER BY created_at DESC
 LIMIT 1;
 `
-	return u.loadUser(query, name)
-}
-
-func (u *User) loadUser(query string, args ...interface{}) (*domain.User, error) {
 	if u.conn == nil {
 		log.Printf("[Storage.User] Error getting user: db is nil")
 		return nil, errors.New("db is nil")
@@ -124,7 +98,7 @@ func (u *User) loadUser(query string, args ...interface{}) (*domain.User, error)
 		return nil, err
 	}
 
-	rows, err := conn.Query(query, args...)
+	rows, err := conn.Query(query, name)
 	if err != nil {
 		log.Printf("[Storage.User] Error getting user: %s", err)
 		return nil, err
@@ -133,16 +107,13 @@ func (u *User) loadUser(query string, args ...interface{}) (*domain.User, error)
 	defer rows.Close()
 
 	for rows.Next() {
-		var id int
-		var name string
 		var key string
 		var approved bool
 		var createdAt string
 
-		err = rows.Scan(&id, &name, &key, &approved, &createdAt)
+		err = rows.Scan(&key, &approved, &createdAt)
 
 		user := *domain.NewUser(name)
-		user.SetId(id)
 		user.SetKey(key)
 		user.SetApproved(approved)
 		user.SetCreatedAt(createdAt)

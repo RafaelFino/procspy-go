@@ -1,4 +1,4 @@
-package procspy_storage
+package storage
 
 import (
 	"fmt"

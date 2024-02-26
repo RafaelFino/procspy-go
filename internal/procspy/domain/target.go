@@ -1,4 +1,4 @@
-package domains
+package domain
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 )
 
 type Target struct {
-	UserID     int     `json:"user_id"`
+	User       string  `json:"user"`
 	Name       string  `json:"name"`
 	Pattern    string  `json:"pattern"`
 	Elapsed    float64 `json:"elapsed,omitempty"`
@@ -20,8 +20,9 @@ type Target struct {
 	regex      *regexp.Regexp
 }
 
-func NewTarget(name string, limit float64, pattern string, kill bool) *Target {
+func NewTarget(user string, name string, limit float64, pattern string, kill bool) *Target {
 	return &Target{
+		User:    user,
 		Name:    name,
 		Elapsed: 0,
 		Limit:   limit,
@@ -29,6 +30,14 @@ func NewTarget(name string, limit float64, pattern string, kill bool) *Target {
 		Kill:    kill,
 		regex:   regexp.MustCompile(pattern),
 	}
+}
+
+func (t *Target) GetUser() string {
+	return t.User
+}
+
+func (t *Target) SetUser(user string) {
+	t.User = user
 }
 
 func (t *Target) GetName() string {
@@ -93,10 +102,6 @@ func (t *Target) GetLimit() float64 {
 
 func (t *Target) GetKill() bool {
 	return t.Kill
-}
-
-func (t *Target) SetUserID(id int) {
-	t.UserID = id
 }
 
 func (t *Target) GetElapsedCommand() string {

@@ -1,4 +1,4 @@
-package domains
+package domain
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 )
 
 type User struct {
-	Id        int    `json:"id"`
 	Name      string `json:"name"`
 	Key       string `json:"key"`
 	Approved  bool   `json:"approved"`
@@ -18,10 +17,6 @@ func NewUser(name string) *User {
 	return &User{
 		Name: name,
 	}
-}
-
-func (u *User) SetId(id int) {
-	u.Id = id
 }
 
 func (u *User) SetKey(key string) {
@@ -38,10 +33,6 @@ func (u *User) SetCreatedAt(created_at string) {
 
 func (u *User) SetToken(token string) {
 	u.Token = token
-}
-
-func (u *User) GetId() int {
-	return u.Id
 }
 
 func (u *User) GetName() string {

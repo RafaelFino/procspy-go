@@ -17,7 +17,7 @@ func NewMatch(dbConn *DbConnection) *Match {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[Match] Error initializing storage: %s", err)
+		log.Printf("[Storage.Match] Error initializing storage: %s", err)
 	}
 
 	return ret
@@ -28,7 +28,7 @@ func (m *Match) Init() error {
 CREATE TABLE IF NOT EXISTS matches (
 	id SERIAL PRIMARY KEY,
 	when DATE DEFAULT CURRENT_DATE(),
-	user_id INT REFERENCES users(id),
+	user varchar(128) REFERENCES users(id),
 	name varchar(128) NOT NULL,
 	pattern TEXT NOT NULL,
 	match TEXT NOT NULL,
@@ -38,14 +38,14 @@ CREATE TABLE IF NOT EXISTS matches (
 	`
 
 	if m.conn == nil {
-		log.Printf("[Match] Error creating tables: db is nil")
+		log.Printf("[Storage.Match] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[Match] Error creating tables: %s", err)
+		log.Printf("[Storage.Match] Error creating tables: %s", err)
 	}
 
 	return err
@@ -53,14 +53,14 @@ CREATE TABLE IF NOT EXISTS matches (
 
 func (m *Match) Close() error {
 	if m.conn == nil {
-		log.Printf("[Match] Database is already closed")
+		log.Printf("[Storage.Match] Database is already closed")
 		return nil
 	}
 
 	return m.conn.Close()
 }
 
-func (m *Match) InsertMatch(userID int, name string, pattern string, match string, elapsed float64) error {
+func (m *Match) InsertMatch(user string, name string, pattern string, match string, elapsed float64) error {
 	insert := `
 INSERT INTO matches
 (
@@ -80,20 +80,20 @@ VALUES
 );`
 
 	if m.conn == nil {
-		log.Printf("[Match] Error logging match: db is nil")
+		log.Printf("[Storage.Match] Error logging match: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(insert)
 
 	if err != nil {
-		log.Printf("[Match] Error logging match: %s")
+		log.Printf("[Storage.Match] Error logging match: %s")
 	}
 
 	return err
 }
 
-func (m *Match) GetElapsed(userID int) (map[string]float64, error) {
+func (m *Match) GetElapsed(user string) (map[string]float64, error) {
 	query := `
 SELECT
 	name,
@@ -101,7 +101,7 @@ SELECT
 FROM
 	matches
 WHERE
-	user_id = ?
+	user = ?
 	and when = current_date
 GROUP BY
 	name
@@ -111,14 +111,14 @@ ORDER BY
 	conn, err := m.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[Match] Error getting connection: %s", err)
+		log.Printf("[Storage.Match] Error getting connection: %s", err)
 		return nil, err
 	}
 
-	rows, err := conn.Query(query, userID)
+	rows, err := conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[Match] Error getting matches: %s", err)
+		log.Printf("[Storage.Match] Error getting matches: %s", err)
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ ORDER BY
 		err = rows.Scan(&name, &elapsed)
 
 		if err != nil {
-			log.Printf("[Match] Error scanning matches: %s", err)
+			log.Printf("[Storage.Match] Error scanning matches: %s", err)
 			return nil, err
 		}
 

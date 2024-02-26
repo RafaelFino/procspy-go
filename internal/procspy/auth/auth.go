@@ -19,7 +19,9 @@ type Authorization struct {
 }
 
 func NewAuthorization() *Authorization {
-	ret := &Authorization{}
+	ret := &Authorization{
+		ttl: time.Hour * 24,
+	}
 
 	err := ret.GenerateKeys()
 	if err != nil {
@@ -65,7 +67,7 @@ func (a *Authorization) GetPubKey() (string, error) {
 	return string(a.pubKey), nil
 }
 
-func (a *Authorization) CreateToken(user string, content interface{}) (string, error) {
+func (a *Authorization) CreateToken(user string, content map[string]string) (string, error) {
 	key, err := jwt.ParseRSAPrivateKeyFromPEM(a.key)
 	if err != nil {
 		return "", fmt.Errorf("[Authorization] Create: parse key: %w", err)
@@ -88,10 +90,11 @@ func (a *Authorization) CreateToken(user string, content interface{}) (string, e
 	return token, nil
 }
 
-func (a *Authorization) Validate(token string) (interface{}, error) {
+func (a *Authorization) Validate(token string) (map[string]string, bool, error) {
+	expired := false
 	key, err := jwt.ParseRSAPublicKeyFromPEM(a.pubKey)
 	if err != nil {
-		return nil, fmt.Errorf("[Authorization] validate: parse key: %w", err)
+		return nil, expired, fmt.Errorf("[Authorization] validate: parse key: %w", err)
 	}
 
 	tok, err := jwt.Parse(token, func(jwtToken *jwt.Token) (interface{}, error) {
@@ -101,40 +104,52 @@ func (a *Authorization) Validate(token string) (interface{}, error) {
 
 		return key, nil
 	})
+
 	if err != nil {
-		return nil, fmt.Errorf("[Authorization] validate error: %w", err)
+		return nil, expired, fmt.Errorf("[Authorization] validate error: %w", err)
 	}
 
 	if !tok.Valid {
-		return nil, fmt.Errorf("[Authorization] validate: invalid token format")
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid token format")
 	}
 
 	claims, ok := tok.Claims.(jwt.MapClaims)
 	if !ok || !tok.Valid {
-		return nil, fmt.Errorf("[Authorization] validate: invalid claims")
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid claims")
 	}
 
 	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
-		return nil, fmt.Errorf("[Authorization] validate: expired token")
+		expired = true
+		return nil, expired, fmt.Errorf("[Authorization] validate: expired token")
 	}
 
 	if !claims.VerifyIssuedAt(time.Now().Unix(), true) {
-		return nil, fmt.Errorf("[Authorization] validate: invalid iat")
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid iat")
 	}
 
 	if !claims.VerifyNotBefore(time.Now().Unix(), true) {
-		return nil, fmt.Errorf("[Authorization] validate: invalid nbf")
+		expired = true
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid nbf")
 	}
 
-	user, ok := claims["sub"]
+	content, ok := claims["dat"].(map[string]string)
 
 	if !ok {
-		return nil, fmt.Errorf("[Authorization] validate: invalid sub")
+
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid sub")
 	}
 
-	fmt.Printf("[Authorization] validate: %s\n", user)
+	if sub, ok := claims["sub"].(string); !ok || sub != "procspy" {
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid sub")
+	}
 
-	return claims["dat"], nil
+	if user, ok := content["user"]; !ok || user == "" {
+		return nil, expired, fmt.Errorf("[Authorization] validate: invalid user")
+	} else {
+		fmt.Printf("[Authorization] validate: %s\n", user)
+	}
+
+	return content, expired, nil
 }
 
 func (a *Authorization) Cypher(data string) (string, error) {

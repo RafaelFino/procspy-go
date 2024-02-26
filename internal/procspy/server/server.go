@@ -73,18 +73,22 @@ func (s *Server) getKey(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"key": key})
 }
 
-func (s *Server) getUserName(c *gin.Context) (string, error) {
-	user := c.Param("user")
+func (s *Server) getParam(c *gin.Context, param string) (string, error) {
+	ret := c.Param(param)
 
-	if user == "" {
-		log.Printf("[Server API] User is empty")
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "user not found"})
-		return "", fmt.Errorf("user not found")
+	if ret == "" {
+		log.Printf("[Server API] %s is empty", param)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "param not found"})
+		return "", fmt.Errorf("param not found")
 	}
 
-	user = strings.ReplaceAll(user, "//", "")
+	ret = strings.ReplaceAll(ret, "//", "")
 
-	return user, nil
+	return ret, nil
+}
+
+func (s *Server) getUserName(c *gin.Context) (string, error) {
+	return s.getParam(c, "user")
 }
 
 func (s *Server) createUser(c *gin.Context) {
@@ -447,7 +451,17 @@ func (s *Server) logCommand(c *gin.Context) {
 		return
 	}
 
-	name := body["name"].(string)
+	name, err := s.getParam(c, "name")
+
+	if err != nil {
+		log.Printf("[Server API] logCommand -> Error getting name: %s", err)
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"message":   "invalid request",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return
+	}
+
 	command := body["command"].(string)
 	commandType := body["type"].(string)
 	commandReturn := body["return"].(string)

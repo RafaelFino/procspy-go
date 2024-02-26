@@ -118,12 +118,12 @@ func (t *Target) GetSoSource() string {
 
 func (t *Target) Match(command string) bool {
 	if t.regex == nil {
-		log.Printf("Trying to compile regex for target %s -> regex: [%s]", t.Name, t.Pattern)
+		log.Printf("[Domain.Target] Trying to compile regex for target %s -> regex: [%s]", t.Name, t.Pattern)
 		t.regex = regexp.MustCompile(t.Pattern)
 	}
 
 	if t.regex == nil {
-		log.Printf("Error matching target %s: regex is nil", t.Name)
+		log.Printf("[Domain.Target] Error matching target %s: regex is nil", t.Name)
 		return false
 	}
 
@@ -141,17 +141,17 @@ func (t *Target) IsExpired() bool {
 func (t *Target) ToJson() string {
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
-		log.Printf("[Target] Error marshalling target: %s", err)
+		log.Printf("[Domain.Target] Error marshalling target: %s", err)
 	}
 
 	return string(ret)
 }
 
 func TargetFromJson(jsonString string) (*Target, error) {
-	ret := NewTarget("", 0, "", false)
+	ret := NewTarget("", "", 0, "", false)
 	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
-		log.Printf("[Target] Error unmarshalling target: %s", err)
+		log.Printf("[Domain.Target] Error unmarshalling target: %s", err)
 		return nil, err
 	}
 

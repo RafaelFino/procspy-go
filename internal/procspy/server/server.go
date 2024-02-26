@@ -466,7 +466,6 @@ func (s *Server) logCommand(c *gin.Context) {
 	commandType := body["type"].(string)
 	commandReturn := body["return"].(string)
 
-	//InsertCommand(user string, name string, commandType string, command string, commandReturn string) error {
 	err = s.CommandStorage.InsertCommand(user.GetName(), name, commandType, command, commandReturn)
 
 	if err != nil {

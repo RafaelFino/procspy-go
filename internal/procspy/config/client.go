@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"procspy/internal/procspy/domain"
 	"strings"
 )
 
@@ -18,25 +19,25 @@ type ClientConfig struct {
 	LogPath     string `json:"log_path"`
 	ConfigUrl   string `json:"config_url"`
 	LoadFromUrl bool   `json:"load_from_url"`
-	localFile   string
+	Targets     []domain.Target
+	localFile   strisng
 	remoteCS    string
 	onUpdate    chan bool
 }
 
-func NewConfig() *Config {
+func NewConfig() *ClientConfig {
 	ret := &ClientConfig{
 		Interval:    60,
-		DBPath:      "data",
 		LogPath:     "logs",
 		ConfigUrl:   "http://rgt-tools.duckdns/config.json",
-		Targets:     make([]Target, 0),
+		Targets:     make([]domain.Target, 0),
 		LoadFromUrl: false,
 	}
 
 	return ret
 }
 
-func InitConfig(filename string, onUpdate chan bool) (*Config, error) {
+func InitConfig(filename string, onUpdate chan bool) (*ClientConfig, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening file: %s", err)
@@ -140,14 +141,14 @@ func (c *ClientConfig) UpdateFromUrl() error {
 
 	remoteCS := c.calcCheckSum(jsonString)
 	if remoteCS != c.GetRemoteCS() {
-		data := make(map[string][]Target, 0)
+		data := make(map[string][]domain.Target, 0)
 		err = json.Unmarshal([]byte(jsonString), &data)
 		if err != nil {
 			log.Printf("Error unmarshalling config: %s from %s", err, jsonString)
 			return err
 		}
 
-		c.Targets = make([]Target, 0)
+		c.Targets = make([]domain.Target, 0)
 
 		for _, target := range data["targets"] {
 			c.Targets = append(c.Targets, target)
@@ -195,7 +196,7 @@ func (c *ClientConfig) downloadConfigFromURL() (string, error) {
 	return buf.String(), err
 }
 
-func (c *ClientConfig) GetTargets() []Target {
+func (c *ClientConfig) GetTargets() []domain.Target {
 	return c.Targets
 }
 

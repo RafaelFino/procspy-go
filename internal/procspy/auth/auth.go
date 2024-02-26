@@ -179,3 +179,31 @@ func (a *Authorization) Decypher(data string) (string, error) {
 
 	return string(dec), nil
 }
+
+func Cypher(data string, key []byte) (string, error) {
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(key)
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] cypher: parse key: %w", err)
+	}
+
+	enc, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(data))
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] cypher: encrypt: %w", err)
+	}
+
+	return string(enc), nil
+}
+
+func Decypher(data string, key []byte) (string, error) {
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(key)
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] decypher: parse key: %w", err)
+	}
+
+	dec, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, []byte(data))
+	if err != nil {
+		return "", fmt.Errorf("[Authorization] decypher: decrypt: %w", err)
+	}
+
+	return string(dec), nil
+}

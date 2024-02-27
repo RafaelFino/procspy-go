@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-type ClientConfig struct {
+type Client struct {
 	Interval    int    `json:"interval"`
 	LogPath     string `json:"log_path"`
 	ConfigUrl   string `json:"config_url"`
@@ -25,8 +25,8 @@ type ClientConfig struct {
 	onUpdate    chan bool
 }
 
-func NewConfig() *ClientConfig {
-	ret := &ClientConfig{
+func NewConfig() *Client {
+	ret := &Client{
 		Interval:    60,
 		LogPath:     "logs",
 		ConfigUrl:   "http://rgt-tools.duckdns/config.json",
@@ -37,7 +37,7 @@ func NewConfig() *ClientConfig {
 	return ret
 }
 
-func InitConfig(filename string, onUpdate chan bool) (*ClientConfig, error) {
+func InitConfig(filename string, onUpdate chan bool) (*Client, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening file: %s", err)
@@ -69,7 +69,7 @@ func InitConfig(filename string, onUpdate chan bool) (*ClientConfig, error) {
 	return ret, nil
 }
 
-func (c *ClientConfig) SaveToFile(filename string) error {
+func (c *Client) SaveToFile(filename string) error {
 	log.Printf("Saving config to file: %s", filename)
 
 	file, err := os.Create(filename)
@@ -88,7 +88,7 @@ func (c *ClientConfig) SaveToFile(filename string) error {
 	return nil
 }
 
-func (c *ClientConfig) ToJson() string {
+func (c *Client) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
 		log.Printf("Error marshalling config: %s", err)
@@ -97,7 +97,7 @@ func (c *ClientConfig) ToJson() string {
 	return string(ret)
 }
 
-func ConfigFromJson(jsonString string) (*ClientConfig, error) {
+func ConfigFromJson(jsonString string) (*Client, error) {
 	ret := NewConfig()
 	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
@@ -108,27 +108,27 @@ func ConfigFromJson(jsonString string) (*ClientConfig, error) {
 	return ret, nil
 }
 
-func (c *ClientConfig) GetRemoteCS() string {
+func (c *Client) GetRemoteCS() string {
 	return c.remoteCS
 }
 
-func (c *ClientConfig) SetRemoteCS(cs string) {
+func (c *Client) SetRemoteCS(cs string) {
 	c.remoteCS = cs
 }
 
-func (c *ClientConfig) GetLocalFile() string {
+func (c *Client) GetLocalFile() string {
 	return c.localFile
 }
 
-func (c *ClientConfig) SetLocalFile(filename string) {
+func (c *Client) SetLocalFile(filename string) {
 	c.localFile = filename
 }
 
-func (c *ClientConfig) calcCheckSum(data string) string {
+func (c *Client) calcCheckSum(data string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(data)))
 }
 
-func (c *ClientConfig) UpdateFromUrl() error {
+func (c *Client) UpdateFromUrl() error {
 	if !c.LoadFromUrl {
 		return nil
 	}
@@ -171,7 +171,7 @@ func (c *ClientConfig) UpdateFromUrl() error {
 	return nil
 }
 
-func (c *ClientConfig) downloadConfigFromURL() (string, error) {
+func (c *Client) downloadConfigFromURL() (string, error) {
 	// Get the data
 	resp, err := http.Get(c.ConfigUrl)
 	if err != nil {
@@ -196,10 +196,10 @@ func (c *ClientConfig) downloadConfigFromURL() (string, error) {
 	return buf.String(), err
 }
 
-func (c *ClientConfig) GetTargets() []domain.Target {
+func (c *Client) GetTargets() []domain.Target {
 	return c.Targets
 }
 
-func (c *ClientConfig) GetInterval() int {
+func (c *Client) GetInterval() int {
 	return c.Interval
 }

@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"fmt"
@@ -14,19 +14,21 @@ import (
 )
 
 type Auth struct {
-	auth *auth.Authorization
+	auth *service.Auth
+	user *service.User
 }
 
-func NewAuth() *Auth {
+func NewAuth(authService *service.Auth, userService *service.User) *Auth {
 	return &Auth{
-		auth: service.NewAuthorization(),
+		auth: authService,
+		user: userService,
 	}
 }
 
 func (a *Auth) GetPubKey() (c *gin.Context) {
 	key, err := a.auth.GetPubKey()
 	if err != nil {
-		log.Printf("[Server API] Error getting public key: %s", err)
+		log.Printf("[handler.Auth] Error getting public key: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -62,7 +64,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	requestDate := body["date"].(string)
 
 	if requestKey == "" || requestDate == "" || requestUser == "" {
-		log.Printf("[Server API] Error decyphering key")
+		log.Printf("[handler.Auth] Error decyphering key")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -73,7 +75,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	authDate, err := time.Parse(time.RFC3339, requestDate)
 
 	if err != nil {
-		log.Printf("[Server API] Error parsing date: %s", err)
+		log.Printf("[handler.Auth] Error parsing date: %s", err)
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid date",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -82,7 +84,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	}
 
 	if authDate.Compare(time.Now().Add(-1*time.Hour)) < 0 {
-		log.Printf("[Server API] Unauthorized request - expired token")
+		log.Printf("[handler.Auth] Unauthorized request - expired token")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -90,10 +92,10 @@ func (a *Auth) Authenticate(c *gin.Context) {
 		return
 	}
 
-	user, err := a.userStorage.GetUser(requestUser)
+	user, err := a.user.GetUser(requestUser)
 
 	if err != nil {
-		log.Printf("[Server API] Error getting user: %s", err)
+		log.Printf("[handler.Auth] Error getting user: %s", err)
 		c.IndentedJSON(http.StatusNotFound, gin.H{
 			"error":     "user not found",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -102,7 +104,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	}
 
 	if user.GetKey() != requestKey || user.GetApproved() == false {
-		log.Printf("[Server API] Unauthorized request")
+		log.Printf("[handler.Auth] Unauthorized request")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -118,7 +120,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 	token, err := a.auth.CreateToken(requestUser, content)
 
 	if err != nil {
-		log.Printf("[Server API] Error creating token: %s", err)
+		log.Printf("[handler.Auth] Error creating token: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -133,14 +135,14 @@ func (a *Auth) Authenticate(c *gin.Context) {
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})
 
-	log.Printf("[Server API] User %s authenticated", requestUser)
+	log.Printf("[handler.Auth] User %s authenticated", requestUser)
 }
 
 func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	token := c.Request.Header.Get("Authorization")
 
 	if token == "" {
-		log.Printf("[Server API] Unauthorized request")
+		log.Printf("[handler.Auth] Unauthorized request")
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid token",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -151,7 +153,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	content, expired, err := a.auth.Validate(token)
 
 	if err != nil {
-		log.Printf("[Server API] Unauthorized request - error: %s", err)
+		log.Printf("[handler.Auth] Unauthorized request - error: %s", err)
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -160,7 +162,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	}
 
 	if expired {
-		log.Printf("[Server API] Unauthorized request - expired token")
+		log.Printf("[handler.Auth] Unauthorized request - expired token")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "expired token",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -169,7 +171,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	}
 
 	if content == nil {
-		log.Printf("[Server API] Unauthorized request - content are nil")
+		log.Printf("[handler.Auth] Unauthorized request - content are nil")
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid token",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -180,7 +182,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	user, ok := content["user"]
 
 	if !ok || user == "" {
-		log.Printf("[Server API] Unauthorized request - invalid user")
+		log.Printf("[handler.Auth] Unauthorized request - invalid user")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -191,7 +193,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	userData, err := u.storage.GetUser(user)
 
 	if err != nil {
-		log.Printf("[Server API] Error loading user: %s", err)
+		log.Printf("[handler.Auth] Error loading user: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -200,7 +202,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	}
 
 	if !userData.GetApproved() {
-		log.Printf("[Server API] Unauthorized request - user not approved")
+		log.Printf("[handler.Auth] Unauthorized request - user not approved")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -209,7 +211,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 	}
 
 	if key, ok := content["key"]; !ok || key == "" || userData.GetKey() != key {
-		log.Printf("[Server API] Unauthorized request - invalid key")
+		log.Printf("[handler.Auth] Unauthorized request - invalid key")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -217,7 +219,7 @@ func (a *Auth) Validate(c *gin.Context) (*domain.User, error) {
 		return nil, fmt.Errorf("unauthorized")
 	}
 
-	log.Printf("[Server API] Authorized request for %s", user)
+	log.Printf("[handler.Auth] Authorized request for %s", user)
 
 	return userData, nil
 }

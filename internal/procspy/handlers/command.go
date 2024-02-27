@@ -1,9 +1,10 @@
-package server
+package handlers
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"procspy/internal/procspy/service"
 	"procspy/internal/procspy/storage"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type Command struct {
-	auth    *Auth
+	auth    *service.Authorization
 	storage *storage.Command
 }
 
@@ -26,19 +27,19 @@ func (cm *Command) InsertCommand(c *gin.Context) {
 	user, err := cm.auth.Validate(c)
 
 	if err != nil {
-		log.Printf("[Server API] logCommand -> Error validating request: %s", err)
+		log.Printf("[handler.Command] logCommand -> Error validating request: %s", err)
 		return
 	}
 
 	if user == nil {
-		log.Printf("[Server API] logCommand -> Cannot load user data")
+		log.Printf("[handler.Command] logCommand -> Cannot load user data")
 		return
 	}
 
 	body, err := s.readCypherBody(c)
 
 	if err != nil {
-		log.Printf("[Server API] logCommand -> Error reading request body: %s", err)
+		log.Printf("[handler.Command] logCommand -> Error reading request body: %s", err)
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"message":   "invalid request",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -49,7 +50,7 @@ func (cm *Command) InsertCommand(c *gin.Context) {
 	name, err := s.getParam(c, "name")
 
 	if err != nil {
-		log.Printf("[Server API] logCommand -> Error getting name: %s", err)
+		log.Printf("[handler.Command] logCommand -> Error getting name: %s", err)
 		c.IndentedJSON(http.StatusBadRequest, gin.H{
 			"message":   "invalid request",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -64,7 +65,7 @@ func (cm *Command) InsertCommand(c *gin.Context) {
 	err = cm.storage.InsertCommand(user.GetName(), name, commandType, command, commandReturn)
 
 	if err != nil {
-		log.Printf("[Server API] logCommand -> Error inserting command: %s", err)
+		log.Printf("[handler.Command] logCommand -> Error inserting command: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -72,7 +73,7 @@ func (cm *Command) InsertCommand(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[Server API] logCommand -> Command inserted for %s::%s", user.GetName(), name)
+	log.Printf("[handler.Command] logCommand -> Command inserted for %s::%s", user.GetName(), name)
 
 	c.IndentedJSON(http.StatusCreated, gin.H{
 		"message":   "command inserted",

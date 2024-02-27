@@ -12,34 +12,34 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Authorization struct {
+type Auth struct {
 	key    []byte
 	pubKey []byte
 	ttl    time.Duration
 }
 
-func NewAuthorization() *Authorization {
-	ret := &Authorization{
+func NewAuth() *Auth {
+	ret := &Auth{
 		ttl: time.Hour * 24,
 	}
 
 	err := ret.GenerateKeys()
 	if err != nil {
-		log.Printf("[Authorization] Error generating keys: %s", err)
+		log.Printf("[Auth] Error generating keys: %s", err)
 		return nil
 	}
 
 	return ret
 }
 
-func (a *Authorization) GenerateKeys() error {
-	log.Printf("[Authorization] Creating new key")
+func (a *Auth) GenerateKeys() error {
+	log.Printf("[Auth] Creating new key")
 
 	bitSize := 4096
 
 	key, err := rsa.GenerateKey(rand.Reader, bitSize)
 	if err != nil {
-		log.Printf("[Authorization] Error generating key: %s", err)
+		log.Printf("[Auth] Error generating key: %s", err)
 		return err
 	}
 
@@ -59,18 +59,18 @@ func (a *Authorization) GenerateKeys() error {
 		},
 	)
 
-	log.Printf("[Authorization] Keys created - pub: %s", string(a.pubKey))
+	log.Printf("[Auth] Keys created - pub: %s", string(a.pubKey))
 	return nil
 }
 
-func (a *Authorization) GetPubKey() (string, error) {
+func (a *Auth) GetPubKey() (string, error) {
 	return string(a.pubKey), nil
 }
 
-func (a *Authorization) CreateToken(user string, content map[string]string) (string, error) {
+func (a *Auth) CreateToken(user string, content map[string]string) (string, error) {
 	key, err := jwt.ParseRSAPrivateKeyFromPEM(a.key)
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] Create: parse key: %w", err)
+		return "", fmt.Errorf("[Auth] Create: parse key: %w", err)
 	}
 
 	now := time.Now().UTC()
@@ -84,91 +84,91 @@ func (a *Authorization) CreateToken(user string, content map[string]string) (str
 
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] Create: sign token: %w", err)
+		return "", fmt.Errorf("[Auth] Create: sign token: %w", err)
 	}
 
 	return token, nil
 }
 
-func (a *Authorization) Validate(token string) (map[string]string, bool, error) {
+func (a *Auth) Validate(token string) (map[string]string, bool, error) {
 	expired := false
 	key, err := jwt.ParseRSAPublicKeyFromPEM(a.pubKey)
 	if err != nil {
-		return nil, expired, fmt.Errorf("[Authorization] validate: parse key: %w", err)
+		return nil, expired, fmt.Errorf("[Auth] validate: parse key: %w", err)
 	}
 
 	tok, err := jwt.Parse(token, func(jwtToken *jwt.Token) (interface{}, error) {
 		if _, ok := jwtToken.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("[Authorization] unexpected method: %s", jwtToken.Header["alg"])
+			return nil, fmt.Errorf("[Auth] unexpected method: %s", jwtToken.Header["alg"])
 		}
 
 		return key, nil
 	})
 
 	if err != nil {
-		return nil, expired, fmt.Errorf("[Authorization] validate error: %w", err)
+		return nil, expired, fmt.Errorf("[Auth] validate error: %w", err)
 	}
 
 	if !tok.Valid {
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid token format")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid token format")
 	}
 
 	claims, ok := tok.Claims.(jwt.MapClaims)
 	if !ok || !tok.Valid {
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid claims")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid claims")
 	}
 
 	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {
 		expired = true
-		return nil, expired, fmt.Errorf("[Authorization] validate: expired token")
+		return nil, expired, fmt.Errorf("[Auth] validate: expired token")
 	}
 
 	if !claims.VerifyIssuedAt(time.Now().Unix(), true) {
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid iat")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid iat")
 	}
 
 	if !claims.VerifyNotBefore(time.Now().Unix(), true) {
 		expired = true
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid nbf")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid nbf")
 	}
 
 	content, ok := claims["dat"].(map[string]string)
 
 	if !ok {
 
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid sub")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid sub")
 	}
 
 	if sub, ok := claims["sub"].(string); !ok || sub != "procspy" {
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid sub")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid sub")
 	}
 
 	if user, ok := content["user"]; !ok || user == "" {
-		return nil, expired, fmt.Errorf("[Authorization] validate: invalid user")
+		return nil, expired, fmt.Errorf("[Auth] validate: invalid user")
 	} else {
-		fmt.Printf("[Authorization] validate: %s\n", user)
+		fmt.Printf("[Auth] validate: %s\n", user)
 	}
 
 	return content, expired, nil
 }
 
-func (a *Authorization) Cypher(data string) (string, error) {
+func (a *Auth) Cypher(data string) (string, error) {
 	return Cypher(data, a.pubKey)
 }
 
-func (a *Authorization) Decypher(data string) (string, error) {
+func (a *Auth) Decypher(data string) (string, error) {
 	return Decypher(data, a.key)
 }
 
 func Cypher(data string, key []byte) (string, error) {
 	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(key)
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] cypher: parse key: %w", err)
+		return "", fmt.Errorf("[Auth] cypher: parse key: %w", err)
 	}
 
 	enc, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(data))
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] cypher: encrypt: %w", err)
+		return "", fmt.Errorf("[Auth] cypher: encrypt: %w", err)
 	}
 
 	return string(enc), nil
@@ -177,12 +177,12 @@ func Cypher(data string, key []byte) (string, error) {
 func Decypher(data string, key []byte) (string, error) {
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(key)
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] decypher: parse key: %w", err)
+		return "", fmt.Errorf("[Auth] decypher: parse key: %w", err)
 	}
 
 	dec, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, []byte(data))
 	if err != nil {
-		return "", fmt.Errorf("[Authorization] decypher: decrypt: %w", err)
+		return "", fmt.Errorf("[Auth] decypher: decrypt: %w", err)
 	}
 
 	return string(dec), nil

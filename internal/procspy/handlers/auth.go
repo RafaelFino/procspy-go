@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"fmt"
@@ -7,21 +7,19 @@ import (
 	"procspy/internal/procspy"
 	auth "procspy/internal/procspy/auth"
 	"procspy/internal/procspy/domain"
-	"procspy/internal/procspy/storage"
+	"procspy/internal/procspy/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Auth struct {
-	auth        *auth.Authorization
-	userStorage *storage.User
+	auth *auth.Authorization
 }
 
-func NewAuth(auth *auth.Authorization, dbConn *storage.DbConnection) *Auth {
+func NewAuth() *Auth {
 	return &Auth{
-		auth:        auth,
-		userStorage: storage.NewUser(dbConn),
+		auth: service.NewAuthorization(),
 	}
 }
 

@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func (u *User) CreateUser(c *gin.Context) {
 	err = u.storage.CreateUser(user, key)
 
 	if err != nil {
-		log.Printf("[Server API] Error creating user: %s", err)
+		log.Printf("[handler.User] Error creating user: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -51,5 +51,5 @@ func (u *User) CreateUser(c *gin.Context) {
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})
 
-	log.Printf("[Server API] User %s created -> %s", user, key)
+	log.Printf("[handler.User] User %s created -> %s", user, key)
 }

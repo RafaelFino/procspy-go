@@ -18,7 +18,7 @@ func NewUser(dbConn *DbConnection) *User {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[Storage.User] Error initializing storage: %s", err)
+		log.Printf("[storage.User] Error initializing storage: %s", err)
 	}
 
 	return ret
@@ -34,14 +34,14 @@ CREATE TABLE IF NOT EXISTS users (
 );
 `
 	if u.conn == nil {
-		log.Printf("[Storage.User] Error creating tables: db is nil")
+		log.Printf("[storage.User] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := u.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[Storage.User] Error creating tables: %s", err)
+		log.Printf("[storage.User] Error creating tables: %s", err)
 	}
 
 	return err
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 func (u *User) Close() error {
 	if u.conn == nil {
-		log.Printf("[Storage.User] Database is already closed")
+		log.Printf("[storage.User] Database is already closed")
 		return nil
 	}
 
@@ -61,14 +61,14 @@ func (u *User) CreateUser(name string, key string) error {
 INSERT INTO users (name, key) VALUES (?, ?)
 `
 	if u.conn == nil {
-		log.Printf("[Storage.User] Error creating user: db is nil")
+		log.Printf("[storage.User] Error creating user: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := u.conn.Exec(insert, name, key)
 
 	if err != nil {
-		log.Printf("[Storage.User] Error creating user: %s", err)
+		log.Printf("[storage.User] Error creating user: %s", err)
 	}
 
 	return err
@@ -88,19 +88,19 @@ ORDER BY created_at DESC
 LIMIT 1;
 `
 	if u.conn == nil {
-		log.Printf("[Storage.User] Error getting user: db is nil")
+		log.Printf("[storage.User] Error getting user: db is nil")
 		return nil, errors.New("db is nil")
 	}
 
 	conn, err := u.conn.GetConn()
 	if err != nil {
-		log.Printf("[Storage.User] Error getting connection: %s", err)
+		log.Printf("[storage.User] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, name)
 	if err != nil {
-		log.Printf("[Storage.User] Error getting user: %s", err)
+		log.Printf("[storage.User] Error getting user: %s", err)
 		return nil, err
 	}
 
@@ -119,7 +119,7 @@ LIMIT 1;
 		user.SetCreatedAt(createdAt)
 
 		if err != nil {
-			log.Printf("[Storage.User] Error scanning user: %s", err)
+			log.Printf("[storage.User] Error scanning user: %s", err)
 			return nil, err
 		}
 

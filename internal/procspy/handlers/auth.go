@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"procspy/internal/procspy"
-	auth "procspy/internal/procspy/auth"
 	"procspy/internal/procspy/domain"
 	"procspy/internal/procspy/service"
 	"time"
@@ -42,10 +41,6 @@ func (a *Auth) GetPubKey() (c *gin.Context) {
 	})
 
 	return
-}
-
-func (a *Auth) GetAuth() *auth.Authorization {
-	return a.auth
 }
 
 func (a *Auth) Authenticate(c *gin.Context) {

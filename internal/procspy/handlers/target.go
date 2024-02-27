@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"fmt"
@@ -26,19 +26,19 @@ func (t *Target) GetTargets(c *gin.Context) {
 	user, err := t.auth.Validate(c)
 
 	if err != nil {
-		log.Printf("[Server API] getTargets -> Error validating request: %s", err)
+		log.Printf("[handler.Target] getTargets -> Error validating request: %s", err)
 		return
 	}
 
 	if user == nil {
-		log.Printf("[Server API] getTargets -> Cannot load user data")
+		log.Printf("[handler.Target] getTargets -> Cannot load user data")
 		return
 	}
 
 	targets, err := t.storage.GetTargets(user.Name)
 
 	if err != nil {
-		log.Printf("[Server API] getTargets -> Error getting targets: %s", err)
+		log.Printf("[handler.Target] getTargets -> Error getting targets: %s", err)
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -46,7 +46,7 @@ func (t *Target) GetTargets(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[Server API] getTargets -> %d targets for %s", len(targets), user.GetName())
+	log.Printf("[handler.Target] getTargets -> %d targets for %s", len(targets), user.GetName())
 	c.IndentedJSON(http.StatusOK, gin.H{
 		"targets":   targets,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),

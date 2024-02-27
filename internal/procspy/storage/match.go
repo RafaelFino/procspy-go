@@ -17,7 +17,7 @@ func NewMatch(dbConn *DbConnection) *Match {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[Storage.Match] Error initializing storage: %s", err)
+		log.Printf("[storage.Match] Error initializing storage: %s", err)
 	}
 
 	return ret
@@ -38,14 +38,14 @@ CREATE TABLE IF NOT EXISTS matches (
 	`
 
 	if m.conn == nil {
-		log.Printf("[Storage.Match] Error creating tables: db is nil")
+		log.Printf("[storage.Match] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[Storage.Match] Error creating tables: %s", err)
+		log.Printf("[storage.Match] Error creating tables: %s", err)
 	}
 
 	return err
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS matches (
 
 func (m *Match) Close() error {
 	if m.conn == nil {
-		log.Printf("[Storage.Match] Database is already closed")
+		log.Printf("[storage.Match] Database is already closed")
 		return nil
 	}
 
@@ -80,14 +80,14 @@ VALUES
 );`
 
 	if m.conn == nil {
-		log.Printf("[Storage.Match] Error logging match: db is nil")
+		log.Printf("[storage.Match] Error logging match: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(insert)
 
 	if err != nil {
-		log.Printf("[Storage.Match] Error logging match: %s")
+		log.Printf("[storage.Match] Error logging match: %s")
 	}
 
 	return err
@@ -111,14 +111,14 @@ ORDER BY
 	conn, err := m.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[Storage.Match] Error getting connection: %s", err)
+		log.Printf("[storage.Match] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[Storage.Match] Error getting matches: %s", err)
+		log.Printf("[storage.Match] Error getting matches: %s", err)
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ ORDER BY
 		err = rows.Scan(&name, &elapsed)
 
 		if err != nil {
-			log.Printf("[Storage.Match] Error scanning matches: %s", err)
+			log.Printf("[storage.Match] Error scanning matches: %s", err)
 			return nil, err
 		}
 

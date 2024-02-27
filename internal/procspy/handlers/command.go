@@ -4,27 +4,27 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"procspy/internal/procspy"
 	"procspy/internal/procspy/service"
-	"procspy/internal/procspy/storage"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Command struct {
-	auth    *service.Authorization
-	storage *storage.Command
+	auth    *service.Auth
+	service *service.Command
 }
 
-func NewCommand(auth *Auth, dbConn *storage.DbConnection) *Command {
+func NewCommand(authService *service.Auth, commandService *service.Command) *Command {
 	return &Command{
-		auth:    auth,
-		storage: storage.NewCommand(dbConn),
+		auth:    authService,
+		service: commandService,
 	}
 }
 
-func (cm *Command) InsertCommand(c *gin.Context) {
-	user, err := cm.auth.Validate(c)
+func (c *Command) InsertCommand(ctx *gin.Context) {
+	user, err := c.auth.Validate(ctx)
 
 	if err != nil {
 		log.Printf("[handler.Command] logCommand -> Error validating request: %s", err)
@@ -36,18 +36,18 @@ func (cm *Command) InsertCommand(c *gin.Context) {
 		return
 	}
 
-	body, err := s.readCypherBody(c)
+	body, err := s.readCypherBody(ctx)
 
 	if err != nil {
 		log.Printf("[handler.Command] logCommand -> Error reading request body: %s", err)
-		c.IndentedJSON(http.StatusBadRequest, gin.H{
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"message":   "invalid request",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
 
-	name, err := s.getParam(c, "name")
+	name, err := procspy.GetName(ctx)
 
 	if err != nil {
 		log.Printf("[handler.Command] logCommand -> Error getting name: %s", err)

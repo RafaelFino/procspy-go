@@ -19,7 +19,7 @@ func NewTarget(dbConn *DbConnection) *Target {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error initializing storage: %s", err)
+		log.Printf("[storage.Target] Error initializing storage: %s", err)
 	}
 
 	return ret
@@ -44,14 +44,14 @@ CREATE TABLE IF NOT EXISTS targets (
 	`
 
 	if t.conn == nil {
-		log.Printf("[Storage.Target] Error creating tables: db is nil")
+		log.Printf("[storage.Target] Error creating tables: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error creating tables: %s", err)
+		log.Printf("[storage.Target] Error creating tables: %s", err)
 	}
 
 	return err
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS targets (
 
 func (t *Target) Close() error {
 	if t.conn == nil {
-		log.Printf("[Storage.Target] Database is already closed")
+		log.Printf("[storage.Target] Database is already closed")
 		return nil
 	}
 
@@ -71,14 +71,14 @@ func (t *Target) InsertTarget(target *domain.Target) error {
 INSERT INTO targets (user, name, pattern, elapsed_cmd, check_cmd, warn_cmd, kill, so_source, limit)
 `
 	if t.conn == nil {
-		log.Printf("[Storage.Target] Error creating target: db is nil")
+		log.Printf("[storage.Target] Error creating target: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(insert, target.GetUser(), target.GetName(), target.GetPattern(), target.GetElapsedCommand(), target.GetCheckCommand(), target.GetWarnCommand(), target.GetKill(), target.GetSoSource(), target.GetLimit())
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error creating target: %s", err)
+		log.Printf("[storage.Target] Error creating target: %s", err)
 	}
 
 	return err
@@ -89,14 +89,14 @@ func (t *Target) DeleteTargets(user string) error {
 DELETE FROM targets WHERE user = ?;	
 `
 	if t.conn == nil {
-		log.Printf("[Storage.Target] Error deleting targets: db is nil")
+		log.Printf("[storage.Target] Error deleting targets: db is nil")
 		return fmt.Errorf("db is nil")
 	}
 
 	err := t.conn.Exec(delete, user)
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error deleting targets: %s", err)
+		log.Printf("[storage.Target] Error deleting targets: %s", err)
 	}
 
 	return err
@@ -121,21 +121,21 @@ ORDER BY
 	name;
 `
 	if t.conn == nil {
-		log.Printf("[Storage.Target] Error getting targets: db is nil")
+		log.Printf("[storage.Target] Error getting targets: db is nil")
 		return nil, fmt.Errorf("db is nil")
 	}
 
 	conn, err := t.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error getting connection: %s", err)
+		log.Printf("[storage.Target] Error getting connection: %s", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[Storage.Target] Error getting targets: %s", err)
+		log.Printf("[storage.Target] Error getting targets: %s", err)
 		return nil, err
 	}
 
@@ -149,7 +149,7 @@ ORDER BY
 		err = rows.Scan(&name, &pattern, &elapsedCmd, &checkCmd, &warnCmd, &kill, &soSource, &limit)
 
 		if err != nil {
-			log.Printf("[Storage.Target] Error scanning targets: %s", err)
+			log.Printf("[storage.Target] Error scanning targets: %s", err)
 			return nil, err
 		}
 

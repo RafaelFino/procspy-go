@@ -17,7 +17,7 @@ func NewCommand(dbConn *DbConnection) *Command {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[Storage.Command] Error initializing storage: %s", err)
+		log.Printf("[storage.Command] Error initializing storage: %s", err)
 	}
 
 	return ret
@@ -37,14 +37,14 @@ CREATE TABLE IF NOT EXISTS command_log (
 	`
 
 	if c.conn == nil {
-		log.Printf("[Storage.Command] Error creating tables: db is nil")
+		log.Printf("[storage.Command] Error creating tables: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := c.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[Storage.Command] Error creating tables: %s", err)
+		log.Printf("[storage.Command] Error creating tables: %s", err)
 	}
 
 	return err
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS command_log (
 
 func (c *Command) Close() error {
 	if c.conn == nil {
-		log.Printf("[Storage.Command] Database is already closed")
+		log.Printf("[storage.Command] Database is already closed")
 		return nil
 	}
 
@@ -77,14 +77,14 @@ VALUES
 	?
 );`
 	if c.conn == nil {
-		log.Printf("[Storage.Command] Error logging command: db is nil")
+		log.Printf("[storage.Command] Error logging command: db is nil")
 		return errors.New("db is nil")
 	}
 
 	err := c.conn.Exec(insert, user, name, commandType, command, commandReturn)
 
 	if err != nil {
-		log.Printf("[Storage.Command] Error logging command: %s")
+		log.Printf("[storage.Command] Error logging command: %s")
 	}
 
 	return err

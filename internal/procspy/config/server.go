@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-type ServerConfig struct {
+type Server struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	DBName   string `json:"dbname"`
@@ -13,21 +13,21 @@ type ServerConfig struct {
 	Password string `json:"password"`
 }
 
-func (c *ServerConfig) ToJson() string {
+func (c *Server) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		log.Printf("[ServerConfig] Error parsing json: %s", err)
+		log.Printf("[Server] Error parsing json: %s", err)
 		return ""
 	}
 
 	return string(ret)
 }
 
-func ServerConfigFromJson(jsonString string) (*ServerConfig, error) {
-	ret := &ServerConfig{}
+func ServerFromJson(jsonString string) (*Server, error) {
+	ret := &Server{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[ServerConfig] Error parsing json: %s", err)
+		log.Printf("[Server] Error parsing json: %s", err)
 		return nil, err
 	}
 

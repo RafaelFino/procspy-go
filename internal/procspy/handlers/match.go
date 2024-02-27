@@ -71,7 +71,7 @@ func (m *Match) InsertMatch(c *gin.Context) {
 	})
 }
 
-func (s *Server) GetElapsed(c *gin.Context) {
+func (m *Match) GetElapsed(c *gin.Context) {
 	user, err := m.auth.Validate(c)
 
 	if err != nil {

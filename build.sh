@@ -2,6 +2,7 @@
 par=$1
 
 if [ "$par" == "clean" ]; then
+    echo "Cleaning bin directory"
     rm -rf bin
     exit 0
 fi

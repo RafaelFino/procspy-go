@@ -1,14 +1,9 @@
 build:
-	./build.sh
-
-run:
-	go run cmd/procspy.go etc/config.json
-
-run-test:
-	go run cmd/procspy.go etc/config-test.json	
+	@./build.sh
 
 all:
-	./build.sh all
+	@./build.sh clean
+	@./build.sh all
 
 clean:
-	rm -rf bin/*
+	@./build.sh clean

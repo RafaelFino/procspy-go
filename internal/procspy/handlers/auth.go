@@ -53,8 +53,6 @@ func (a *Auth) GetPubKey(c *gin.Context) {
 		"key":       key,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})
-
-	return
 }
 
 // Authenticate is a method to authenticate a user
@@ -94,6 +92,11 @@ func (a *Auth) GetPubKey(c *gin.Context) {
 func (a *Auth) Authenticate(c *gin.Context) {
 	bodyKeys := []string{"key", "user", "date"}
 	body, err := GetFromBody(c, a.auth, bodyKeys)
+
+	if err != nil {
+		log.Printf("[handler.Auth] Error reading request body: %s", err)
+		return
+	}
 
 	requestKey := body["key"]
 	requestUser := body["user"]
@@ -139,7 +142,7 @@ func (a *Auth) Authenticate(c *gin.Context) {
 		return
 	}
 
-	if user.GetKey() != requestKey || user.GetApproved() == false {
+	if user.GetKey() != requestKey || !user.GetApproved() {
 		log.Printf("[handler.Auth] Unauthorized request")
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "unauthorized",

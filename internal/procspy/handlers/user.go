@@ -4,48 +4,58 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy"
-	"procspy/internal/procspy/storage"
+	"procspy/internal/procspy/server"
+	"procspy/internal/procspy/service"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/gin-gonic/gin"
-	guuid "github.com/google/uuid"
 )
 
 type User struct {
-	storage *storage.User
+	auth    *service.Auth
+	service *service.User
 }
 
-func NewUser(dbConn *storage.DbConnection) *User {
+func NewUser(userService *service.User, authService *service.Auth) *User {
 	return &User{
-		storage: storage.NewUser(dbConn),
+		auth:    authService,
+		service: userService,
 	}
 }
 
-func (u *User) CreateUser(c *gin.Context) {
-	user, err := procspy.GetUser(c)
+func (u *User) CreateUser(ctx *gin.Context) {
+	body, err := server.ReadCypherBody(ctx, u.auth)
 
 	if err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{
-			"message":   "user not found",
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+			"error":     "invalid request",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
 
-	key := guuid.New().String()
-	err = u.storage.CreateUser(user, key)
+	user := body["user"].(string)
+
+	key, ok := body["key"]
+
+	if !ok {
+		key = uuid.NewString()
+	}
+
+	err = u.service.CreateUser(user, key.(string))
 
 	if err != nil {
 		log.Printf("[handler.User] Error creating user: %s", err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{
+	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"message":   "user created",
 		"key":       key,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),

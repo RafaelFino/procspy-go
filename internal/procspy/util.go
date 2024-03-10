@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"procspy/internal/procspy/auth"
+	"procspy/internal/procspy/service/auth"
 	"strings"
 
 	"github.com/gin-gonic/gin"

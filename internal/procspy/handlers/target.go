@@ -4,50 +4,48 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy/storage"
+	"procspy/internal/procspy/server"
+	"procspy/internal/procspy/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Target struct {
-	auth    *Auth
-	storage *storage.Target
+	auth    *service.Auth
+	service *service.Target
+	user    *service.User
 }
 
-func NewTarget(auth *Auth, dbConn *storage.DbConnection) *Target {
+func NewTarget(targetService *service.Target, authService *service.Auth, userService *service.User) *Target {
 	return &Target{
-		auth:    auth,
-		storage: storage.NewTarget(dbConn),
+		auth:    authService,
+		service: targetService,
+		user:    userService,
 	}
 }
 
-func (t *Target) GetTargets(c *gin.Context) {
-	user, err := t.auth.Validate(c)
+func (t *Target) GetTargets(ctx *gin.Context) {
+	user, err := server.ValidateRequest(ctx, t.user)
 
 	if err != nil {
-		log.Printf("[handler.Target] getTargets -> Error validating request: %s", err)
+		log.Printf("[handler.Match] GetTargets -> Error validating request: %s", err)
 		return
 	}
 
-	if user == nil {
-		log.Printf("[handler.Target] getTargets -> Cannot load user data")
-		return
-	}
-
-	targets, err := t.storage.GetTargets(user.Name)
+	targets, err := t.service.GetTargets(user.GetName())
 
 	if err != nil {
-		log.Printf("[handler.Target] getTargets -> Error getting targets: %s", err)
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{
+		log.Printf("[handler.Target] GetTargets -> Error getting targets: %s", err)
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
 
-	log.Printf("[handler.Target] getTargets -> %d targets for %s", len(targets), user.GetName())
-	c.IndentedJSON(http.StatusOK, gin.H{
+	log.Printf("[handler.Target] GetTargets -> %d targets for %s", len(targets), user.GetName())
+	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"targets":   targets,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})

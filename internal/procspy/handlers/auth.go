@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy/server"
+	"procspy/internal/procspy"
 	"procspy/internal/procspy/service"
 	"time"
 
@@ -94,7 +94,7 @@ func (a *Auth) GetPubKey(c *gin.Context) {
 //	}
 func (a *Auth) Authenticate(c *gin.Context) {
 	bodyKeys := []string{"key", "user", "date"}
-	body, err := server.GetFromBody(c, a.auth, bodyKeys)
+	body, err := procspy.GetFromBody(c, a.auth, bodyKeys)
 
 	requestKey := body["key"]
 	requestUser := body["user"]

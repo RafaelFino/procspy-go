@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy/server"
+	"procspy/internal/procspy"
 	"procspy/internal/procspy/service"
 	"time"
 
@@ -26,7 +26,7 @@ func NewTarget(targetService *service.Target, authService *service.Auth, userSer
 }
 
 func (t *Target) GetTargets(ctx *gin.Context) {
-	user, err := server.ValidateRequest(ctx, t.user)
+	user, err := procspy.ValidateRequest(ctx, t.user)
 
 	if err != nil {
 		log.Printf("[handler.Match] GetTargets -> Error validating request: %s", err)

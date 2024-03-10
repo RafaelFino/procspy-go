@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy/server"
+	"procspy/internal/procspy"
 	"procspy/internal/procspy/service"
 	"time"
 
@@ -26,7 +26,7 @@ func NewUser(userService *service.User, authService *service.Auth) *User {
 }
 
 func (u *User) CreateUser(ctx *gin.Context) {
-	body, err := server.ReadCypherBody(ctx, u.auth)
+	body, err := procspy.ReadCypherBody(ctx, u.auth)
 
 	if err != nil {
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{

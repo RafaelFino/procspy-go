@@ -6,11 +6,13 @@ import (
 )
 
 type Server struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	DBName   string `json:"dbname"`
-	User     string `json:"user"`
-	Password string `json:"password"`
+	APIPort    string `json:"api_port"`
+	DBHost     string `json:"db_host"`
+	DBPort     int    `json:"db_port"`
+	DBName     string `json:"db_name"`
+	DBUser     string `json:"db_user"`
+	DBPassword string `json:"db_password"`
+	LogPath    string `json:"log_path"`
 }
 
 func (s *Server) ToJson() string {

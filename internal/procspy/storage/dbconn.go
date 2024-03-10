@@ -25,10 +25,10 @@ func NewDbConnection(config *config.Server) *DbConnection {
 	}
 
 	ret.dbname = config.DBName
-	ret.user = config.User
-	ret.password = config.Password
-	ret.host = config.Host
-	ret.port = config.Port
+	ret.user = config.DBUser
+	ret.password = config.DBPassword
+	ret.host = config.DBHost
+	ret.port = config.DBPort
 
 	return ret
 }

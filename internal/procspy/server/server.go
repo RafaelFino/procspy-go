@@ -1,8 +1,14 @@
 package server
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/handlers"
@@ -24,6 +30,8 @@ type Server struct {
 	commandHandler *handlers.Command
 	targetHandler  *handlers.Target
 	matchHandler   *handlers.Match
+
+	srv *http.Server
 }
 
 func NewServer(config *config.Server) *Server {
@@ -58,6 +66,7 @@ func (s *Server) initServices() {
 func (s *Server) Start() {
 	log.Printf("Starting server on %s:%d", s.config.Host, s.config.Port)
 
+	gin.ForceConsoleColor()
 	gin.DefaultWriter = log.Writer()
 	gin.DefaultErrorWriter = log.Writer()
 
@@ -71,14 +80,34 @@ func (s *Server) Start() {
 	s.router.GET("/match/:user", s.matchHandler.GetMatches)
 	s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
 
+	log.Print("Router started")
+
+	s.srv = &http.Server{
+		Addr:    s.config.APIPort,
+		Handler: s.router,
+	}
+
 	go func() {
-		s.router.Run(fmt.Sprintf("%s:%d", s.config.Host, s.config.Port))
+		log.Printf("Server running under goroutine, listen and serve on %s", s.config.APIPort)
+		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("listen: %s\n", err)
+		}
+
 		log.Print("Server stopped")
 	}()
 
-	log.Print("Server started")
-}
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-func (s *Server) Stop() {
-	s.router = nil
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := s.srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }

@@ -33,7 +33,7 @@ func main() {
 		log.SetOutput(os.Stdout)
 	}
 
-	fmt.Printf("%s\nStarting...", getLogo())
+	fmt.Printf("%s\nStarting...", procspy.GetLogo())
 
 	spy := procspy.NewSpy(cfg)
 	go spy.Start(onUpdate)

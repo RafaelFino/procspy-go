@@ -14,13 +14,13 @@ if [ "$par" == "all" ]; then
     do
         for arch in "${archs[@]}"
         do
-            echo " >> Building CLI for $os $arch > bin/$os-$arch/procspy"
+            echo "[$os $arch] Building CLI -> ./bin/$os-$arch/procspy"
             GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-cli cmd/cli/main.go
 
-            echo " >> Building Client for $os $arch> bin/$os-$arch/procspy-client"
+            echo "[$os $arch] Building Client -> ./bin/$os-$arch/procspy-client"
             GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-client cmd/client/main.go
 
-            echo " >> Building Server for $os $arch > bin/$os-$arch/procspy-server"
+            echo "[$os $arch] Building Server -> ./bin/$os-$arch/procspy-server"
             GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-server cmd/server/main.go
         done
     done
@@ -30,11 +30,11 @@ fi
 os=`go env GOOS`
 arch=`go env GOARCH`
 
-echo " >> Building CLI for $os $arch > bin/$os-$arch/procspy"
+echo "[$os $arch] Building CLI -> ./bin/$os-$arch/procspy"
 GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-cli cmd/cli/main.go
 
-echo " >> Building Client for $os $arch> bin/$os-$arch/procspy-client"
+echo "[$os $arch] Building Client -> ./bin/$os-$arch/procspy-client"
 GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-client cmd/client/main.go
 
-echo " >> Building Server for $os $arch > bin/$os-$arch/procspy-server"
+echo "[$os $arch] Building Server -> ./bin/$os-$arch/procspy-server"
 GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/procspy-server cmd/server/main.go

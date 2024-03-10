@@ -24,6 +24,30 @@ func NewCommand(commandService *service.Command, authService *service.Auth, user
 	}
 }
 
+// InsertCommand is a method to insert a command
+// It receives a request with a command, type and return
+// It returns an error if the command can't be inserted
+// Body request example:
+//
+//	{
+//		"command": "<command>",
+//		"type": "<type>",
+//		"return": "<return>"
+//	}
+//
+// Ok Response Example:
+//
+//	{
+//		"message": "command inserted",
+//		"timestamp": "<timestamp>"
+//	}
+//
+// Error Response Example:
+//
+//	{
+//		"error": "internal error",
+//		"timestamp": "<timestamp>"
+//	}
 func (c *Command) InsertCommand(ctx *gin.Context) {
 	user, err := ValidateRequest(ctx, c.user, c.auth)
 

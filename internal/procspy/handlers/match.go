@@ -26,26 +26,22 @@ func NewMatch(matchService *service.Match, auth *service.Auth, userService *serv
 	}
 }
 
-// GetMatches is a method to get the matches
-// It returns the matches
-// It returns an error if the matches can't be retrieved
+// InsertMatch is a method to insert a match
+// It receives a request with a name, pattern, match and elapsed
+// It returns an error if the match can't be inserted
+// Body request example:
+//
+//	{
+//		"name": "<name>",
+//		"pattern": "<pattern>",
+//		"match": "<match>",
+//		"elapsed": "<elapsed>"
+//	}
+//
 // Ok Response Example:
 //
 //	{
-//		"matches": [
-//			{
-//				"name": "<name>",
-//				"pattern": "<pattern>",
-//				"match": "<match>",
-//				"elapsed": "<elapsed>"
-//			},
-//			{
-//				"name": "<name>",
-//				"pattern": "<pattern>",
-//				"match": "<match>",
-//				"elapsed": "<elapsed>"
-//			}
-//		],
+//		"message": "match inserted",
 //		"timestamp": "<timestamp>"
 //	}
 //

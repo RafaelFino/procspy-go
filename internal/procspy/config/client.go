@@ -37,7 +37,7 @@ func NewConfig() *Client {
 	return ret
 }
 
-func InitConfig(filename string, onUpdate chan bool) (*Client, error) {
+func InitClientConfig(filename string, onUpdate chan bool) (*Client, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Printf("Error opening file: %s", err)

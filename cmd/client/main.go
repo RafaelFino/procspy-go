@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"procspy/internal/procspy"
+	"procspy/internal/procspy/config"
 	"syscall"
 	"time"
 
@@ -21,7 +22,7 @@ func main() {
 	configFile := os.Args[1]
 	onUpdate := make(chan bool, 1)
 
-	cfg, err := procspy.InitConfig(configFile, onUpdate)
+	cfg, err := config.InitClientConfig(configFile, onUpdate)
 	if err != nil {
 		fmt.Printf("Error loading config file: %s", err)
 		os.Exit(1)
@@ -34,10 +35,6 @@ func main() {
 	}
 
 	fmt.Printf("%s\nStarting...", procspy.GetLogo())
-
-	spy := procspy.NewSpy(cfg)
-	go spy.Start(onUpdate)
-	defer spy.Stop()
 
 	quitChannel := make(chan os.Signal, 1)
 	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)

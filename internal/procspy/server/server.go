@@ -64,7 +64,7 @@ func (s *Server) initServices() {
 }
 
 func (s *Server) Start() {
-	log.Printf("Starting server on %s:%d", s.config.Host, s.config.Port)
+	log.Printf("Starting server on %s", s.config.APIPort)
 
 	gin.ForceConsoleColor()
 	gin.DefaultWriter = log.Writer()

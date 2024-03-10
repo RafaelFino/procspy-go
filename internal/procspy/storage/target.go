@@ -28,7 +28,7 @@ func NewTarget(dbConn *DbConnection) *Target {
 func (t *Target) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS targets (     
-	user varchar(128) REFERENCES users(id),
+	user varchar(128) REFERENCES users(name),
 	name varchar(128) NOT NULL,
 	pattern TEXT NOT NULL,
 	elapsed_cmd TEXT NOT NULL,

@@ -28,7 +28,7 @@ func (m *Match) Init() error {
 CREATE TABLE IF NOT EXISTS matches (
 	id SERIAL PRIMARY KEY,
 	when DATE DEFAULT CURRENT_DATE(),
-	user varchar(128) REFERENCES users(id),
+	user varchar(128) REFERENCES users(name),
 	name varchar(128) NOT NULL,
 	pattern TEXT NOT NULL,
 	match TEXT NOT NULL,
@@ -64,7 +64,7 @@ func (m *Match) InsertMatch(user string, name string, pattern string, match stri
 	insert := `
 INSERT INTO matches
 (
-	user_id,
+	user,
 	name,
 	pattern,
 	match,

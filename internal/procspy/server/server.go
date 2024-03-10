@@ -11,6 +11,7 @@ import (
 
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/domain"
+	"procspy/internal/procspy/handlers"
 	"procspy/internal/procspy/service"
 	"procspy/internal/procspy/storage"
 
@@ -20,14 +21,20 @@ import (
 type Server struct {
 	router *gin.Engine
 
-	config *config.ServerConfig
+	config *config.Server
 
 	dbConn         *storage.DbConnection
-	authService    *Auth
-	userService    *User
-	commandService *Command
-	targetService  *Target
-	matchService   *Match
+	authService    *service.Auth
+	userService    *service.User
+	commandService *service.Command
+	targetService  *service.Target
+	matchService   *service.Match
+
+	authHandler    *handlers.Auth
+	userHandler    *handlers.User
+	commandHandler *handlers.Command
+	targetHandler  *handlers.Target
+	matchHandler   *handlers.Match
 }
 
 func NewServer(config *config.Server) *Server {
@@ -43,14 +50,14 @@ func (s *Server) Start() {
 	gin.DefaultErrorWriter = log.Writer()
 
 	s.router = gin.Default()
-	s.router.GET("/key", s.authService.GetPubKey)
-	s.router.POST("/user/:user", s.userService.CreateUser)
-	s.router.POST("/auth/", s.authService.Authenticate)
+	s.router.GET("/key", s.authHandler.GetPubKey)
+	s.router.POST("/user/:user", s.userHandler.CreateUser)
+	s.router.POST("/auth/", s.authHandler.Authenticate)
 
-	s.router.GET("/targets/:user", s.targetService.GetTargets)
-	s.router.POST("/match/:user", s.matchService.InsertMatch)
-	s.router.GET("/match/:user", s.matchService.GetMatches)
-	s.router.POST("/command/:user/:name", s.commandService.InsertCommand)
+	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
+	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
+	s.router.GET("/match/:user", s.matchHandler.GetMatches)
+	s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
 
 	go func() {
 		s.router.Run(fmt.Sprintf("%s:%d", s.config.Host, s.config.Port))

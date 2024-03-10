@@ -39,7 +39,7 @@ func NewAuth(authService *service.Auth, userService *service.User) *Auth {
 //		"error": "internal error",
 //		"timestamp": "<timestamp>"
 //	}
-func (a *Auth) GetPubKey() (c *gin.Context) {
+func (a *Auth) GetPubKey(c *gin.Context) {
 	key, err := a.auth.GetPubKey()
 	if err != nil {
 		log.Printf("[handler.Auth] Error getting public key: %s", err)

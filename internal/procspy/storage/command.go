@@ -27,7 +27,7 @@ func (c *Command) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS command_log (
 	id SERIAL PRIMARY KEY,
-	user varchar(128) REFERENCES users(id),
+	user varchar(128) REFERENCES users(name),
 	name varchar(128) NOT NULL,
 	command_type varchar(128) DEFAULT NULL,
 	command TEXT NOT NULL,

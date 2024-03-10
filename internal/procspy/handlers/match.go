@@ -116,7 +116,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	})
 }
 
-// GetElapsed is a method to get the elapsed matches
+// GetMatches is a method to get the elapsed matches
 // It returns the elapsed matches
 // It returns an error if the matches can't be retrieved
 // Ok Response Example:
@@ -147,18 +147,18 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 //		"error": "internal error",
 //		"timestamp": "<timestamp>"
 //	}
-func (m *Match) GetElapsed(ctx *gin.Context) {
+func (m *Match) GetMatches(ctx *gin.Context) {
 	user, err := server.ValidateRequest(ctx, m.user)
 
 	if err != nil {
-		log.Printf("[handler.Match] GetElapsed -> Error validating request: %s", err)
+		log.Printf("[handler.Match] GetMatches -> Error validating request: %s", err)
 		return
 	}
 
 	matches, err := m.service.GetElapsed(user.GetName())
 
 	if err != nil {
-		log.Printf("[handler.Match] GetElapsed -> Error getting elapsed: %s", err)
+		log.Printf("[handler.Match] GetMatches -> Error getting elapsed: %s", err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -166,7 +166,7 @@ func (m *Match) GetElapsed(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("[handler.Match] getElapsed -> %d matches for %s", len(matches), user.GetName())
+	log.Printf("[handler.Match] GetMatches -> %d matches for %s", len(matches), user.GetName())
 
 	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"matches":   matches,

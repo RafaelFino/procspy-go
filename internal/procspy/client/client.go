@@ -1,10 +1,15 @@
 package client
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"os"
 	"os/exec"
+	"procspy/internal/procspy"
+	"procspy/internal/procspy/config"
+	"procspy/internal/procspy/domain"
 	"time"
 
 	"github.com/mitchellh/go-ps"
@@ -12,17 +17,58 @@ import (
 )
 
 type Spy struct {
-	Config     *Config
+	Config     *config.Client
 	enabled    bool
 	currentDay int
+	targets    []*domain.Target
+	token      string
+	pubKey     string
 }
 
-func NewSpy(config *Config) *Spy {
-	return &Spy{
+func NewSpy(config *config.Client) *Spy {
+	ret := &Spy{
 		Config:     config,
 		enabled:    false,
 		currentDay: time.Now().Day(),
+		targets:    make([]*domain.Target, 0),
 	}
+
+	s.router.GET("/key", s.authHandler.GetPubKey)
+	s.router.POST("/user/:user", s.userHandler.CreateUser)
+	s.router.POST("/auth/", s.authHandler.Authenticate)
+
+	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
+	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
+	s.router.GET("/match/:user", s.matchHandler.GetMatches)
+	s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
+
+	return ret
+}
+
+func (s *Spy) Auth() error {
+	jsonData, err := procspy.DownloadFromURL(fmt.Sprintf("%s/key", s.Config.ServerURL))
+
+	if err != nil {
+		log.Fatalf("[Auth] Error getting public key: %s", err)
+		return err
+	}
+
+	data := make(map[string]string, 0)
+	err = json.Unmarshal([]byte(jsonData), data)
+	if err != nil {
+		log.Printf("[Auth] Error parsing json: %s", err)
+		return err
+	}
+
+	pubKey, ok := data["key"]
+
+	if !ok {
+		log.Fatalf("[Auth] Error getting public key: %s -> bad format", err)
+		return err
+	}
+
+	log.Printf("[Auth] Public key: %s", pubKey)
+	s.pubKey = pubKey
 }
 
 func (s *Spy) run(last time.Time) error {

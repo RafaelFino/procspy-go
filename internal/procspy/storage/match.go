@@ -87,7 +87,7 @@ VALUES
 	err := m.conn.Exec(insert)
 
 	if err != nil {
-		log.Printf("[storage.Match] Error logging match: %s")
+		log.Printf("[storage.Match] Error logging match: %s", err)
 	}
 
 	return err

@@ -6,6 +6,8 @@ import (
 
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/handlers"
+	"procspy/internal/procspy/service"
+	"procspy/internal/procspy/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +17,8 @@ type Server struct {
 
 	config *config.Server
 
+	dbConn *storage.DbConnection
+
 	authHandler    *handlers.Auth
 	userHandler    *handlers.User
 	commandHandler *handlers.Command
@@ -23,9 +27,32 @@ type Server struct {
 }
 
 func NewServer(config *config.Server) *Server {
-	return &Server{
+	ret := &Server{
 		config: config,
+		dbConn: storage.NewDbConnection(config),
 	}
+
+	ret.initServices()
+
+	return ret
+}
+
+func (s *Server) initServices() {
+	log.Printf("Creating services...")
+	authService := service.NewAuth()
+	userService := service.NewUser(s.dbConn)
+	commandService := service.NewCommand(s.dbConn)
+	targetService := service.NewTarget(s.dbConn)
+	matchService := service.NewMatch(s.dbConn)
+	log.Printf("Services created")
+
+	log.Printf("Initializing handlers...")
+	s.authHandler = handlers.NewAuth(authService, userService)
+	s.userHandler = handlers.NewUser(userService, authService)
+	s.commandHandler = handlers.NewCommand(commandService, authService, userService)
+	s.targetHandler = handlers.NewTarget(targetService, authService, userService)
+	s.matchHandler = handlers.NewMatch(matchService, authService, userService)
+	log.Printf("Handlers initialized")
 }
 
 func (s *Server) Start() {

@@ -19,6 +19,7 @@ func NewUser(dbConn *DbConnection) *User {
 
 	if err != nil {
 		log.Printf("[storage.User] Error initializing storage: %s", err)
+		panic(err)
 	}
 
 	return ret

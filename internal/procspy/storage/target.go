@@ -20,6 +20,7 @@ func NewTarget(dbConn *DbConnection) *Target {
 
 	if err != nil {
 		log.Printf("[storage.Target] Error initializing storage: %s", err)
+		panic(err)
 	}
 
 	return ret

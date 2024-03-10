@@ -19,6 +19,7 @@ func NewMatch(dbConn *DbConnection) *Match {
 
 	if err != nil {
 		log.Printf("[storage.Match] Error initializing storage: %s", err)
+		panic(err)
 	}
 
 	return ret

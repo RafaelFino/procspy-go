@@ -18,6 +18,7 @@ func NewCommand(dbConn *DbConnection) *Command {
 
 	if err != nil {
 		log.Printf("[storage.Command] Error initializing storage: %s", err)
+		panic(err)
 	}
 
 	return ret

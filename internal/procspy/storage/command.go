@@ -84,7 +84,7 @@ VALUES
 	err := c.conn.Exec(insert, user, name, commandType, command, commandReturn)
 
 	if err != nil {
-		log.Printf("[storage.Command] Error logging command: %s")
+		log.Printf("[storage.Command] Error logging command: %s", err)
 	}
 
 	return err

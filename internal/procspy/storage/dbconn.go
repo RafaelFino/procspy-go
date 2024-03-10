@@ -5,11 +5,11 @@ import (
 	"log"
 
 	"database/sql"
-	procspy_config "procspy/internal/procspy/config"
+	"procspy/internal/procspy/config"
 )
 
 type DbConnection struct {
-	config   *procspy_config.ServerConfig
+	config   *config.Server
 	conn     *sql.DB
 	user     string
 	port     int
@@ -18,7 +18,7 @@ type DbConnection struct {
 	password string
 }
 
-func NewDbConnection(config *procspy_config.ServerConfig) *DbConnection {
+func NewDbConnection(config *config.Server) *DbConnection {
 	ret := &DbConnection{
 		config: config,
 		conn:   nil,

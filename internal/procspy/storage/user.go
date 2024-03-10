@@ -106,25 +106,21 @@ LIMIT 1;
 
 	defer rows.Close()
 
-	for rows.Next() {
-		var key string
-		var approved bool
-		var createdAt string
+	var key string
+	var approved bool
+	var createdAt string
 
-		err = rows.Scan(&key, &approved, &createdAt)
+	err = rows.Scan(&key, &approved, &createdAt)
 
-		user := *domain.NewUser(name)
-		user.SetKey(key)
-		user.SetApproved(approved)
-		user.SetCreatedAt(createdAt)
-
-		if err != nil {
-			log.Printf("[storage.User] Error scanning user: %s", err)
-			return nil, err
-		}
-
-		return &user, err
+	if err != nil {
+		log.Printf("[storage.User] Error scanning user: %s", err)
+		return nil, err
 	}
 
-	return nil, err
+	user := domain.NewUser(name)
+	user.SetKey(key)
+	user.SetApproved(approved)
+	user.SetCreatedAt(createdAt)
+
+	return user, err
 }

@@ -1,4 +1,4 @@
-package procspy-client
+package main
 
 import (
 	"fmt"

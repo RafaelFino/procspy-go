@@ -1,0 +1,27 @@
+package procspy-cli
+
+import (
+	"log"
+	"procspy/internal/procspy"
+)
+
+func main() {
+	log.Printf(procspy.GetLogo())
+}
+
+func UpdateTargets(path string, user string) error {
+	log.Printf("[procspy-cli] Updating targets")
+	//
+	return nil
+}
+
+// Path: internal/procspy
+func CreateUser(name string, key string) error {
+	log.Printf("[procspy-cli] Creating user: %s", name)
+	return u.storage.CreateUser(name, key)
+}
+
+func ApproveUser(name string) error {
+	log.Printf("[procspy-cli] Approving user: %s", name)
+	return u.storage.ApproveUser(name)
+}

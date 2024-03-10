@@ -1,4 +1,4 @@
-package main
+package procspy-server
 
 import (
 	"fmt"
@@ -64,19 +64,4 @@ func initLogger(path string) error {
 	log.SetOutput(writer)
 
 	return nil
-}
-
-func getLogo() string {
-	return `
-
-	_____                                                
-	|  __ \                                               
-	| |__) |  _ __    ___     ___     ___   _ __    _   _ 
-	|  ___/  | '__|  / _ \   / __|   / __| | '_ \  | | | |
-	| |      | |    | (_) | | (__    \__ \ | |_) | | |_| |
-	|_|      |_|     \___/   \___|   |___/ | .__/   \__, |
-										   | |       __/ |
-										   |_|      |___/ 
-   
-`
 }

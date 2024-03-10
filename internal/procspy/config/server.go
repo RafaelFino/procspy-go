@@ -14,7 +14,7 @@ type Server struct {
 }
 
 func (s *Server) ToJson() string {
-	ret, err := json.MarshalIndent(c, "", "  ")
+	ret, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		log.Printf("[Server] Error parsing json: %s", err)
 		return ""
@@ -32,8 +32,4 @@ func ServerFromJson(jsonString string) (*Server, error) {
 	}
 
 	return ret, nil
-}
-
-func (s *Server) CreateStringConnection() string {
-	return s.User + ":" + s.Password + "@" + s.Host + ":" + s.Port + "/" + s.DBName + "?sslmode=disable"
 }

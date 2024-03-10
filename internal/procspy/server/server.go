@@ -6,8 +6,6 @@ import (
 
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/handlers"
-	"procspy/internal/procspy/service"
-	"procspy/internal/procspy/storage"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,13 +14,6 @@ type Server struct {
 	router *gin.Engine
 
 	config *config.Server
-
-	dbConn         *storage.DbConnection
-	authService    *service.Auth
-	userService    *service.User
-	commandService *service.Command
-	targetService  *service.Target
-	matchService   *service.Match
 
 	authHandler    *handlers.Auth
 	userHandler    *handlers.User

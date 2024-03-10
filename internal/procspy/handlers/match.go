@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy"
 	"procspy/internal/procspy/domain"
 	"procspy/internal/procspy/service"
 	"strconv"
@@ -57,7 +56,7 @@ func NewMatch(matchService *service.Match, auth *service.Auth, userService *serv
 //		"timestamp": "<timestamp>"
 //	}
 func (m *Match) InsertMatch(ctx *gin.Context) {
-	user, err := procspy.ValidateRequest(ctx, m.user)
+	user, err := ValidateRequest(ctx, m.user)
 
 	if err != nil {
 		log.Printf("[handler.Match] InsertMatch -> Error validating request: %s", err)
@@ -65,7 +64,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	}
 
 	bodyKeys := []string{"name", "pattern", "match", "elapsed"}
-	body, err := procspy.GetFromBody(ctx, m.auth, bodyKeys)
+	body, err := GetFromBody(ctx, m.auth, bodyKeys)
 
 	if err != nil {
 		log.Printf("[handler.Match] InsertMatch -> Error reading request body: %s", err)
@@ -148,7 +147,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 //		"timestamp": "<timestamp>"
 //	}
 func (m *Match) GetMatches(ctx *gin.Context) {
-	user, err := procspy.ValidateRequest(ctx, m.user)
+	user, err := ValidateRequest(ctx, m.user)
 
 	if err != nil {
 		log.Printf("[handler.Match] GetMatches -> Error validating request: %s", err)

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"procspy/internal/procspy"
 	"procspy/internal/procspy/service"
 	"time"
 
@@ -26,7 +25,7 @@ func NewCommand(commandService *service.Command, authService *service.Auth, user
 }
 
 func (c *Command) InsertCommand(ctx *gin.Context) {
-	user, err := procspy.ValidateRequest(ctx, c.user)
+	user, err := ValidateRequest(ctx, c.user)
 
 	if err != nil {
 		log.Printf("[handler.Command] InsertCommand -> Error validating request: %s", err)
@@ -34,14 +33,14 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 	}
 
 	bodyKeys := []string{"command", "type", "return"}
-	body, err := procspy.GetFromBody(ctx, c.auth, bodyKeys)
+	body, err := GetFromBody(ctx, c.auth, bodyKeys)
 
 	if err != nil {
 		log.Printf("[handler.Command] InsertCommand -> Error reading request body: %s", err)
 		return
 	}
 
-	name, err := procspy.GeNameFromParam(ctx)
+	name, err := GeNameFromParam(ctx)
 
 	if err != nil {
 		log.Printf("[handler.Command] InsertCommand -> Error getting name: %s", err)

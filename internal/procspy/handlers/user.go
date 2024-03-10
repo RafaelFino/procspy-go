@@ -24,6 +24,30 @@ func NewUser(userService *service.User, authService *service.Auth) *User {
 	}
 }
 
+// CreateUser is a method to create a user
+// It receives a request with a user and key
+// It returns an error if the user can't be created
+// Body request example:
+//
+//	{
+//		"user": "<user>",
+//		"key": "<key>" //optional
+//	}
+//
+// Ok Response Example:
+//
+//	{
+//		"message": "user created",
+//		"key": "<key>",
+//		"timestamp": "<timestamp>"
+//	}
+//
+// Error Response Example:
+//
+//	{
+//		"error": "internal error",
+//		"timestamp": "<timestamp>"
+//	}
 func (u *User) CreateUser(ctx *gin.Context) {
 	body, err := ReadCypherBody(ctx, u.auth)
 

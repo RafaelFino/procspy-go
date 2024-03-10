@@ -19,6 +19,29 @@ import (
 // It receives a request context and a user service
 // It returns a user and an error
 // It returns an error if the request is invalid
+// It returns an error if the user is not approved
+// It returns an error if the user is not authorized
+// It returns an error if the key is invalid
+// It returns an error if the token is invalid
+// It returns an error if the token is expired
+// It returns an error if the user data can't be loaded
+// It returns an error if the user is not found
+// It returns an error if the user key is invalid
+// It returns an error if the user key is empty
+// It returns an error if the user is empty
+// It returns an error if the token is empty
+// It returns an error if the user mismatch
+// It returns an error if the user key mismatch
+// It returns an error if the user data can't be loaded
+// It returns an error if the user is not approved
+// Request example:
+//
+//	URL:
+//		<url>/:user
+//	Header:
+//		authorization: <token>
+//	Returns:
+//		domain.User from token + URL
 func ValidateRequest(ctx *gin.Context, userService *service.User, authService *service.Auth) (*domain.User, error) {
 	token, err := geToken(ctx)
 

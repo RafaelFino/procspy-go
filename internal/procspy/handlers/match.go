@@ -154,7 +154,7 @@ func (m *Match) GetMatches(ctx *gin.Context) {
 		return
 	}
 
-	matches, err := m.service.GetElapsed(user.GetName())
+	matches, err := m.service.GetMatches(user.GetName())
 
 	if err != nil {
 		log.Printf("[handler.Match] GetMatches -> Error getting elapsed: %s", err)

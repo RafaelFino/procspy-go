@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"log"
+	"procspy/internal/procspy/domain"
 )
 
 type Match struct {
@@ -60,7 +61,7 @@ func (m *Match) Close() error {
 	return m.conn.Close()
 }
 
-func (m *Match) InsertMatch(user string, name string, pattern string, match string, elapsed float64) error {
+func (m *Match) InsertMatch(match *domain.Match) error {
 	insert := `
 INSERT INTO matches
 (
@@ -84,7 +85,7 @@ VALUES
 		return errors.New("db is nil")
 	}
 
-	err := m.conn.Exec(insert)
+	err := m.conn.Exec(insert, match.User, match.Name, match.Pattern, match.Match, match.Elapsed)
 
 	if err != nil {
 		log.Printf("[storage.Match] Error logging match: %s", err)
@@ -93,7 +94,7 @@ VALUES
 	return err
 }
 
-func (m *Match) GetElapsed(user string) (map[string]float64, error) {
+func (m *Match) GetMatches(user string) (map[string]float64, error) {
 	query := `
 SELECT
 	name,

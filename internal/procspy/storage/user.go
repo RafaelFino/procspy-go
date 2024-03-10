@@ -74,6 +74,24 @@ INSERT INTO users (name, key) VALUES (?, ?)
 	return err
 }
 
+func (u *User) ApproveUser(name string) error {
+	update := `
+UPDATE users SET approved = TRUE WHERE name = ?
+`
+	if u.conn == nil {
+		log.Printf("[storage.User] Error approving user: db is nil")
+		return errors.New("db is nil")
+	}
+
+	err := u.conn.Exec(update, name)
+
+	if err != nil {
+		log.Printf("[storage.User] Error approving user: %s", err)
+	}
+
+	return err
+}
+
 func (u *User) GetUser(name string) (*domain.User, error) {
 	query := `
 SELECT

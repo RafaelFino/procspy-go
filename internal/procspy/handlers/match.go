@@ -56,7 +56,7 @@ func NewMatch(matchService *service.Match, auth *service.Auth, userService *serv
 //		"timestamp": "<timestamp>"
 //	}
 func (m *Match) InsertMatch(ctx *gin.Context) {
-	user, err := ValidateRequest(ctx, m.user)
+	user, err := ValidateRequest(ctx, m.user, m.auth)
 
 	if err != nil {
 		log.Printf("[handler.Match] InsertMatch -> Error validating request: %s", err)
@@ -147,7 +147,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 //		"timestamp": "<timestamp>"
 //	}
 func (m *Match) GetMatches(ctx *gin.Context) {
-	user, err := ValidateRequest(ctx, m.user)
+	user, err := ValidateRequest(ctx, m.user, m.auth)
 
 	if err != nil {
 		log.Printf("[handler.Match] GetMatches -> Error validating request: %s", err)

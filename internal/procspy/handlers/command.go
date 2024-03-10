@@ -25,7 +25,7 @@ func NewCommand(commandService *service.Command, authService *service.Auth, user
 }
 
 func (c *Command) InsertCommand(ctx *gin.Context) {
-	user, err := ValidateRequest(ctx, c.user)
+	user, err := ValidateRequest(ctx, c.user, c.auth)
 
 	if err != nil {
 		log.Printf("[handler.Command] InsertCommand -> Error validating request: %s", err)

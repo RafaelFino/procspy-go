@@ -19,7 +19,7 @@ import (
 // It receives a request context and a user service
 // It returns a user and an error
 // It returns an error if the request is invalid
-func ValidateRequest(ctx *gin.Context, userService *service.User) (*domain.User, error) {
+func ValidateRequest(ctx *gin.Context, userService *service.User, authService *service.Auth) (*domain.User, error) {
 	token, err := geToken(ctx)
 
 	if err != nil {
@@ -32,7 +32,7 @@ func ValidateRequest(ctx *gin.Context, userService *service.User) (*domain.User,
 		return nil, err
 	}
 
-	content, expired, err := s.authService.Validate(token)
+	content, expired, err := authService.Validate(token)
 
 	if err != nil {
 		log.Printf("[Server] Error validating request: %s", err)
@@ -144,7 +144,7 @@ func ValidateRequest(ctx *gin.Context, userService *service.User) (*domain.User,
 	return userData, nil
 }
 
-func GetRequestParam(c *gin.Context, param string) (string, error) {
+func GetRequestParam(ctx *gin.Context, param string) (string, error) {
 	ret := ctx.Param(param)
 
 	if ret == "" {
@@ -159,7 +159,7 @@ func GetRequestParam(c *gin.Context, param string) (string, error) {
 }
 
 func GetFromBody(ctx *gin.Context, auth *service.Auth, keys []string) (map[string]string, error) {
-	body, err := ReadCypherBody(c, auth)
+	body, err := ReadCypherBody(ctx, auth)
 
 	if err != nil {
 		log.Printf("[Server] Error reading request body: %s", err)

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -10,6 +9,7 @@ import (
 	"procspy/internal/procspy"
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/domain"
+	"procspy/internal/procspy/service"
 	"time"
 
 	"github.com/mitchellh/go-ps"
@@ -31,33 +31,33 @@ func NewSpy(config *config.Client) *Spy {
 		enabled:    false,
 		currentDay: time.Now().Day(),
 		targets:    make([]*domain.Target, 0),
+		token:      "",
 	}
+	/*
+		s.router.GET("/key", s.authHandler.GetPubKey)
+		s.router.POST("/user/:user", s.userHandler.CreateUser)
+		s.router.POST("/auth/", s.authHandler.Authenticate)
 
-	s.router.GET("/key", s.authHandler.GetPubKey)
-	s.router.POST("/user/:user", s.userHandler.CreateUser)
-	s.router.POST("/auth/", s.authHandler.Authenticate)
-
-	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
-	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
-	s.router.GET("/match/:user", s.matchHandler.GetMatches)
-	s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
-
+		s.router.GET("/targets/:user", s.targetHandler.GetTargets)
+		s.router.POST("/match/:user", s.matchHandler.InsertMatch)
+		s.router.GET("/match/:user", s.matchHandler.GetMatches)
+		s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
+	*/
 	return ret
 }
 
 func (s *Spy) Auth() error {
-	jsonData, err := procspy.DownloadFromURL(fmt.Sprintf("%s/key", s.Config.ServerURL))
+	keyUrl := fmt.Sprintf("%s/key/", s.Config.ServerURL)
+	data, status, err := procspy.HttpGet(keyUrl, "")
 
 	if err != nil {
-		log.Fatalf("[Auth] Error getting public key: %s", err)
+		log.Fatalf("[Auth] Error getting public key, http status code: %s from %s -> error: %s", status, keyUrl, err)
 		return err
 	}
 
-	data := make(map[string]string, 0)
-	err = json.Unmarshal([]byte(jsonData), data)
-	if err != nil {
-		log.Printf("[Auth] Error parsing json: %s", err)
-		return err
+	if status != 200 {
+		log.Fatalf("[Auth] Error getting public key, http status code: %s from %s", status, keyUrl)
+		return fmt.Errorf("http get pub key error, http status code: %s", status)
 	}
 
 	pubKey, ok := data["key"]
@@ -68,7 +68,64 @@ func (s *Spy) Auth() error {
 	}
 
 	log.Printf("[Auth] Public key: %s", pubKey)
-	s.pubKey = pubKey
+	s.pubKey = pubKey.(string)
+
+	userInfo := fmt.Sprintf(`{ "user": "%s"}`, s.Config.User)
+
+	payload, err := service.Cypher(userInfo, []byte(s.pubKey))
+
+	authUrl := fmt.Sprintf("%s/auth/", s.Config.ServerURL)
+	resp, status, err := procspy.HttpPost(authUrl, "", payload)
+
+	if err != nil {
+		log.Fatalf("[Auth] Error authenticating user: %s -> %s", s.Config.User, err)
+		return err
+	}
+
+	if status != 200 {
+		log.Fatalf("[Auth] Error authenticating user: %s -> http status code: %s", s.Config.User, status)
+		return fmt.Errorf("http post auth error, http status code: %s", status)
+	}
+
+	token, ok := resp["token"]
+
+	s.token = token.(string)
+
+	log.Printf("[Auth] Token: %s", s.token)
+}
+
+func (s *Spy) GetTargets() error {
+	if s.token == "" {
+		err := s.Auth()
+		if err != nil {
+			return err
+		}
+	}
+
+	targetUrl := fmt.Sprintf("%s/targets/%s", s.Config.ServerURL, s.Config.User)
+	data, status, err := procspy.HttpGet(targetUrl, s.token)
+
+	if err != nil {
+		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s -> error: %s", status, targetUrl, err)
+		return err
+	}
+
+	if status != 200 {
+		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s", status, targetUrl)
+		return fmt.Errorf("http get targets error, http status code: %s", status)
+	}
+
+	targets, ok := data["targets"]
+
+	if !ok {
+		log.Fatalf("[GetTargets] Error getting targets: %s -> bad format", err)
+		return err
+	}
+
+	log.Printf("[GetTargets] Targets: %s", targets)
+	s.targets = targets.([]*domain.Target)
+
+	return nil
 }
 
 func (s *Spy) run(last time.Time) error {

@@ -54,7 +54,7 @@ func WriteFile(path, data string) error {
 	return nil
 }
 
-func DownloadFromURL(url string, token string) (map[string]interface{}, int, error) {
+func HttpGet(url string, token string) (map[string]interface{}, int, error) {
 	ret := make(map[string]interface{}, 0)
 	buf := new(strings.Builder)
 
@@ -103,18 +103,12 @@ func DownloadFromURL(url string, token string) (map[string]interface{}, int, err
 	return ret, resp.StatusCode, err
 }
 
-func PostToURL(token string, url string, data interface{}) (map[string]interface{}, int, error) {
+func HttpPost(url string, token string, data string) (map[string]interface{}, int, error) {
 	ret := make(map[string]interface{}, 0)
 	buf := new(strings.Builder)
 
-	jsonData, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		log.Printf("[HTTP.POST] Error marshalling config: %s", err)
-		return ret, http.StatusInternalServerError, err
-	}
-
 	contentType := "application/json"
-	reqBody := []byte(jsonData)
+	reqBody := []byte(data)
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))

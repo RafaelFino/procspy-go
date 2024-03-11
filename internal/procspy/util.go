@@ -54,35 +54,63 @@ func WriteFile(path, data string) error {
 	return nil
 }
 
-func DownloadFromURL(url string) (string, error) {
-	// Get the data
-	resp, err := http.Get(url)
+func DownloadFromURL(url string, token string) (map[string]interface{}, int, error) {
+	ret := make(map[string]interface{}, 0)
+	buf := new(strings.Builder)
+
+	contentType := "application/json"
+	reqBody := make([]byte, 0)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
 	if err != nil {
-		log.Printf("Error downloading config: %s", err)
-		return "", err
+		log.Printf("[HTTP.GET] Error requesting data: %s", err)
+		return ret, http.StatusInternalServerError, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
+	if len(token) > 0 {
+		req.Header.Add("authorization", token)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("[HTTP.GET] Error requesting data: %s", err)
+		return ret, http.StatusInternalServerError, err
+	}
+
+	defer log.Printf("[HTTP.GET] Response Status: %s from %s -> %s", resp.Status, url, buf.String())
 	defer resp.Body.Close()
 
-	buf := new(strings.Builder)
 	n, err := io.Copy(buf, resp.Body)
 
 	if n == 0 {
-		log.Printf("Error downloading config: %d bytes read: %s", n, err)
-		return "", errors.New("no data read")
+		log.Printf("[HTTP.GET] Error downloading config: %d bytes read: %s", n, err)
+		return ret, resp.StatusCode, errors.New("no data read")
 	}
 
 	if err != nil {
-		log.Printf("Error downloading config: %s", err)
-		return "", err
+		log.Printf("[HTTP.GET] Error downloading config: %s", err)
+		return ret, resp.StatusCode, err
 	}
 
-	return buf.String(), err
+	err = json.Unmarshal([]byte(buf.String()), &ret)
+
+	if err != nil {
+		log.Printf("[HTTP.GET] Error parsing json: %s", err)
+	}
+
+	return ret, resp.StatusCode, err
 }
 
-func PostToURL(token string, url string, data interface{}) (string, error) {
+func PostToURL(token string, url string, data interface{}) (map[string]interface{}, int, error) {
+	ret := make(map[string]interface{}, 0)
+	buf := new(strings.Builder)
+
 	jsonData, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
-		log.Printf("Error marshalling config: %s", err)
+		log.Printf("[HTTP.POST] Error marshalling config: %s", err)
+		return ret, http.StatusInternalServerError, err
 	}
 
 	contentType := "application/json"
@@ -91,34 +119,43 @@ func PostToURL(token string, url string, data interface{}) (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
 	if err != nil {
-		log.Printf("Error posting data: %s", err)
-		return "", err
+		log.Printf("[HTTP.POST] Error posting data: %s", err)
+		return ret, http.StatusInternalServerError, err
 	}
 
 	req.Header.Add("Content-Type", contentType)
-	req.Header.Add("authorization", token)
+	if len(token) > 0 {
+		req.Header.Add("authorization", token)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error posting data: %s", err)
-		return "", err
+		log.Printf("[HTTP.POST] Error posting data: %s", err)
+		return ret, http.StatusInternalServerError, err
 	}
+
+	defer log.Printf("[HTTP.POST] Response Status: %s from %s -> %s", resp.Status, url, buf.String())
 	defer resp.Body.Close()
 
-	buf := new(strings.Builder)
 	n, err := io.Copy(buf, resp.Body)
 
 	if n == 0 {
-		log.Printf("Error reading data from response: %d bytes read: %s", n, err)
-		return "", errors.New("no data read")
+		log.Printf("[HTTP.POST] Error reading data from response: %d bytes read: %s", n, err)
+		return ret, resp.StatusCode, errors.New("no data read")
 	}
 
 	if err != nil {
-		log.Printf("Error reading data from response data: %s", err)
-		return "", err
+		log.Printf("[HTTP.POST] Error reading data from response data: %s", err)
+		return ret, resp.StatusCode, err
 	}
 
-	return buf.String(), err
+	err = json.Unmarshal([]byte(buf.String()), &ret)
+
+	if err != nil {
+		log.Printf("[HTTP.POST] Error parsing json: %s", err)
+	}
+
+	return ret, resp.StatusCode, err
 }
 
 func GetLogo() string {

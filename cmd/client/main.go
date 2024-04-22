@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"procspy/internal/procspy"
 	"procspy/internal/procspy/config"
 	"syscall"
 	"time"
@@ -34,7 +33,8 @@ func main() {
 		log.SetOutput(os.Stdout)
 	}
 
-	fmt.Printf("%s\nStarting...", procspy.GetLogo())
+	PrintLogo()
+	fmt.Printf("\nStarting...")
 
 	quitChannel := make(chan os.Signal, 1)
 	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
@@ -61,4 +61,17 @@ func initLogger(path string) error {
 	log.SetOutput(writer)
 
 	return nil
+}
+
+func PrintLogo() {
+	fmt.Println(`
+ _____                                                          _____   _   _                  _    
+|  __ \                                                        / ____| | | (_)                | |   
+| |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | |      | |  _    ___   _ __   | |_  
+|  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______| | |      | | | |  / _ \ | '_ \  | __| 
+| |      | |    | (_) | | (__  \__ \ | |_) | | |_| |          | |____  | | | | |  __/ | | | | \ |_  
+|_|      |_|     \___/   \___| |___/ | .__/   \__, |           \_____| |_| |_|  \___| |_| |_|  \__| 
+									 | |      __/ /                                                 
+									 |_|     |___/                                                  
+	`)
 }

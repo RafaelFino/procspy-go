@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"log"
+	"os"
 )
 
 type Server struct {
@@ -33,5 +34,17 @@ func ConfigServerFromJson(jsonString string) (*Server, error) {
 		return nil, err
 	}
 
+	log.Printf("Server config: %s", ret.ToJson())
+
 	return ret, nil
+}
+
+func ConfigServerFromFile(path string) (*Server, error) {
+	byteValue, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("Error reading file: %s", err)
+		return nil, err
+	}
+
+	return ConfigServerFromJson(string(byteValue))
 }

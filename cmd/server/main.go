@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"procspy/internal/procspy"
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/server"
 	"syscall"
@@ -41,7 +40,8 @@ func main() {
 		log.SetOutput(os.Stdout)
 	}
 
-	fmt.Printf("%s\nStarting...", procspy.GetLogo())
+	PrintLogo()
+	fmt.Printf("\nStarting...")
 
 	service := server.NewServer(cfg)
 	go service.Start()
@@ -71,4 +71,17 @@ func initLogger(path string) error {
 	log.SetOutput(writer)
 
 	return nil
+}
+
+func PrintLogo() {
+	fmt.Println(`
+ _____                                                          _____                                      
+|  __ \                                                        / ____|                                     
+| |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | (___     ___   _ __  __   __   ___   _ __  
+|  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______|  \___ \   / _ \ | '__| \ \ / /  / _ \ | '__| 
+| |      | |    | (_) | | (__  \__ \ | |_) | | |_| |           ____) | |  __/ | |     \ V /  |  __/ | |    
+|_|      |_|     \___/   \___| |___/ | .__/   \__, |          |_____/   \___| |_|      \_/    \___| |_|    
+									 | |      __/ /                                                        
+									 |_|     |___/                                                         
+`)
 }

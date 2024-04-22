@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"log"
+	"os"
 
 	"procspy/internal/procspy/domain"
 )
@@ -32,13 +33,15 @@ func (c *Client) ToJson() string {
 	return string(ret)
 }
 
-func ConfigFromJson(jsonString string) (*Client, error) {
+func ConfigClientFromJson(jsonString string) (*Client, error) {
 	ret := &Client{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
 		log.Printf("[Client] Error unmarshalling config: %s", err)
 		return nil, err
 	}
+
+	log.Printf("Client config: %s", ret.ToJson())
 
 	return ret, nil
 }
@@ -53,4 +56,14 @@ func (c *Client) AddTargets(targets []domain.Target) {
 
 func (c *Client) AddTarget(t domain.Target) {
 	c.Targets = append(c.Targets, t)
+}
+
+func ConfigClientFromFile(path string) (*Client, error) {
+	byteValue, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("Error reading file: %s", err)
+		return nil, err
+	}
+
+	return ConfigClientFromJson(string(byteValue))
 }

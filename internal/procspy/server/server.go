@@ -25,8 +25,6 @@ type Server struct {
 
 	dbConn *storage.DbConnection
 
-	authHandler    *handlers.Auth
-	userHandler    *handlers.User
 	commandHandler *handlers.Command
 	targetHandler  *handlers.Target
 	matchHandler   *handlers.Match
@@ -37,7 +35,7 @@ type Server struct {
 func NewServer(config *config.Server) *Server {
 	ret := &Server{
 		config: config,
-		dbConn: storage.NewDbConnection(config),
+		dbConn: storage.NewDbConnection(config.DBPath),
 	}
 
 	ret.initServices()
@@ -47,19 +45,16 @@ func NewServer(config *config.Server) *Server {
 
 func (s *Server) initServices() {
 	log.Printf("Creating services...")
-	authService := service.NewAuth()
-	userService := service.NewUser(s.dbConn)
 	commandService := service.NewCommand(s.dbConn)
-	targetService := service.NewTarget(s.dbConn)
+	targetService := service.NewTarget(s.config)
 	matchService := service.NewMatch(s.dbConn)
+	userService := service.NewUsers(s.config)
 	log.Printf("Services created")
 
 	log.Printf("Initializing handlers...")
-	s.authHandler = handlers.NewAuth(authService, userService)
-	s.userHandler = handlers.NewUser(userService, authService)
-	s.commandHandler = handlers.NewCommand(commandService, authService, userService)
-	s.targetHandler = handlers.NewTarget(targetService, authService, userService)
-	s.matchHandler = handlers.NewMatch(matchService, authService, userService)
+	s.commandHandler = handlers.NewCommand(commandService, userService)
+	s.targetHandler = handlers.NewTarget(targetService, userService)
+	s.matchHandler = handlers.NewMatch(matchService, userService)
 	log.Printf("Handlers initialized")
 }
 
@@ -71,10 +66,6 @@ func (s *Server) Start() {
 	gin.DefaultErrorWriter = log.Writer()
 
 	s.router = gin.Default()
-	s.router.GET("/key", s.authHandler.GetPubKey)
-	s.router.POST("/user/:user", s.userHandler.CreateUser)
-	s.router.POST("/auth/", s.authHandler.Authenticate)
-
 	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
 	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
 	s.router.GET("/match/:user", s.matchHandler.GetMatches)

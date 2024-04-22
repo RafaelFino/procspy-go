@@ -2,60 +2,44 @@ package domain
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 )
 
 type Command struct {
-	UserID        int       `json:"user_id"`
-	Name          string    `json:"name"`
-	Command       string    `json:"command"`
-	CommandReturn string    `json:"command_return"`
-	CreatedAt     time.Time `json:"created_at"`
+	User        string    `json:"user"`
+	Name        string    `json:"name"`
+	CommandLine string    `json:"command_line"`
+	Return      string    `json:"command_return"`
+	Source      string    `json:"source"`
+	CommandLog  string    `json:"command_log"`
+	CreatedAt   time.Time `json:"created_at,omitempty"`
 }
 
-func NewCommand(name string, command string) *Command {
+func NewCommand(user string, name string, commandLine string, commandReturn string) *Command {
 	return &Command{
-		Name:      name,
-		Command:   command,
-		CreatedAt: time.Now(),
+		User:        user,
+		Name:        name,
+		CommandLine: commandLine,
+		Return:      commandReturn,
+		Source:      "procspy",
+		CommandLog:  "",
+		CreatedAt:   time.Now(),
 	}
 }
 
-func (c *Command) SetUserID(id int) {
-	c.UserID = id
-}
-
-func (c *Command) SetCommandReturn(commandReturn string) {
-	c.CommandReturn = commandReturn
-}
-
-func (c *Command) GetUserID() int {
-	return c.UserID
-}
-
-func (c *Command) GetName() string {
-	return c.Name
-}
-
-func (c *Command) GetCommand() string {
-	return c.Command
-}
-
-func (c *Command) GetCommandReturn() string {
-	return c.CommandReturn
-}
-
-func (c *Command) GetCreatedAt() time.Time {
-	return c.CreatedAt
-}
-
-func (c *Command) SetCreatedAt(created_at time.Time) {
-	c.CreatedAt = created_at
-}
-
-func (c *Command) ToJson() string {
-	ret, err := json.MarshalIndent(c, "", "\t")
+func (c *Command) ToLog() string {
+	ret, err := json.Marshal(c)
 	if err != nil {
+		log.Printf("[Command] Error parsing json: %s", err)
+		return ""
+	}
+	return string(ret)
+}
+func (c *Command) ToJson() string {
+	ret, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		log.Printf("[Command] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
@@ -65,6 +49,7 @@ func CommandFromJson(jsonString string) (*Command, error) {
 	ret := &Command{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
+		log.Printf("[Command] Error parsing json: %s", err)
 		return nil, err
 	}
 	return ret, nil

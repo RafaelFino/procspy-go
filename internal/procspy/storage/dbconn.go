@@ -1,49 +1,53 @@
 package storage
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
-	"database/sql"
-	"procspy/internal/procspy/config"
+	_ "modernc.org/sqlite"
 )
 
 type DbConnection struct {
-	config   *config.Server
-	conn     *sql.DB
-	user     string
-	port     int
-	host     string
-	dbname   string
-	password string
+	conn *sql.DB
+	path string
+	last string
 }
 
-func NewDbConnection(config *config.Server) *DbConnection {
-	ret := &DbConnection{
-		config: config,
-		conn:   nil,
+func NewDbConnection(path string) *DbConnection {
+	return &DbConnection{
+		path: path,
 	}
-
-	ret.dbname = config.DBName
-	ret.user = config.DBUser
-	ret.password = config.DBPassword
-	ret.host = config.DBHost
-	ret.port = config.DBPort
-
-	return ret
 }
 
-func (d *DbConnection) connect() error {
-	var err error
+func (d *DbConnection) makeDBPath() string {
+	return fmt.Sprintf("%s//%s.db", d.path, time.Now().Format("2006-01-02"))
+}
+func (d *DbConnection) GetConn() (*sql.DB, error) {
+	path := d.makeDBPath()
 
-	d.conn, err = sql.Open("postgres", d.makeConnString())
-	if err != nil {
-		log.Printf("[DbConnection] Error connecting to database: %s", err)
-		return err
+	if d.last != path {
+		err := d.Close()
+
+		if err != nil {
+			log.Printf("[DbConnection] Error closing connection: %s", err)
+			return nil, err
+		}
 	}
-	log.Printf("[DbConnection] Connected to database")
 
-	return err
+	if d.conn == nil {
+		log.Printf("[DbConnection] Opening connection to %s", path)
+		conn, err := sql.Open("sqlite", path)
+		if err != nil {
+			log.Printf("[DbConnection] Error connecting to database: %s", err)
+			return nil, err
+		}
+		d.conn = conn
+		d.last = path
+	}
+
+	return d.conn, nil
 }
 
 func (d *DbConnection) Close() error {
@@ -52,49 +56,49 @@ func (d *DbConnection) Close() error {
 		return nil
 	}
 
-	log.Printf("[DbConnection] Disconnecting from database")
-	return d.conn.Close()
-}
+	err := d.conn.Close()
 
-func (d *DbConnection) makeConnString() string {
-	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable", d.user, d.password, d.host, d.port, d.dbname)
-}
-
-func (d *DbConnection) GetConn() (*sql.DB, error) {
-	if d.conn == nil {
-		err := d.connect()
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		log.Printf("[DbConnection] Error closing connection: %s", err)
+		return err
 	}
 
-	return d.conn, nil
+	log.Printf("[DbConnection] Connection closed for %s", d.last)
+
+	return nil
 }
 
-func (d *DbConnection) Exec(script string, args ...interface{}) error {
+func (d *DbConnection) Exec(query string, args ...interface{}) error {
 	conn, err := d.GetConn()
+
 	if err != nil {
 		log.Printf("[DbConnection] Error getting connection: %s", err)
 		return err
 	}
 
-	result, err := conn.Exec(script, args...)
+	res, err := conn.Exec(query, args...)
 
 	if err != nil {
-		log.Printf("[DbConnection] Error executing script: %s \n %s", script, err)
+		log.Printf("[DbConnection] Error executing query: %s", err)
 		return err
 	}
 
-	if result != nil {
-		affected, err := result.RowsAffected()
+	if res != nil {
+		affected, err := res.RowsAffected()
+
 		if err != nil {
-			log.Printf("[DbConnection] Error getting affected rows: %s", err)
+			log.Printf("[DbConnection] Error getting rows affected: %s", err)
 			return err
 		}
 
-		if affected == 0 {
-			log.Printf("[DbConnection] No rows affected by %s", script)
+		lastId, err := res.LastInsertId()
+
+		if err != nil {
+			log.Printf("[DbConnection] Error getting last id: %s", err)
+			return err
 		}
+
+		log.Printf("[DbConnection] Query executed successfully: %d rows affected -> lastId: %d", affected, lastId)
 	}
 
 	return nil

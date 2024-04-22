@@ -6,30 +6,30 @@ import (
 )
 
 type Server struct {
-	APIPort    string `json:"api_port"`
-	DBHost     string `json:"db_host"`
-	DBPort     int    `json:"db_port"`
-	DBName     string `json:"db_name"`
-	DBUser     string `json:"db_user"`
-	DBPassword string `json:"db_password"`
-	LogPath    string `json:"log_path"`
+	DBPath     string            `json:"db_path"`
+	LogPath    string            `json:"log_path"`
+	APIPort    string            `json:"api_port"`
+	UserTarges map[string]string `json:"user_targets"`
+}
+
+func NewServer() *Server {
+	return &Server{}
 }
 
 func (s *Server) ToJson() string {
-	ret, err := json.MarshalIndent(s, "", "  ")
+	ret, err := json.MarshalIndent(s, "", "\t")
 	if err != nil {
-		log.Printf("[Server] Error parsing json: %s", err)
-		return ""
+		log.Printf("Error marshalling target: %s", err)
 	}
 
 	return string(ret)
 }
 
-func ServerFromJson(jsonString string) (*Server, error) {
+func ConfigServerFromJson(jsonString string) (*Server, error) {
 	ret := &Server{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[Server] Error parsing json: %s", err)
+		log.Printf("Error unmarshalling target: %s", err)
 		return nil, err
 	}
 

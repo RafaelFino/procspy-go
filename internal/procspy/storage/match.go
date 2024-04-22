@@ -28,14 +28,14 @@ func NewMatch(dbConn *DbConnection) *Match {
 func (m *Match) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS matches (
-	id SERIAL PRIMARY KEY,
-	when DATE DEFAULT CURRENT_DATE(),
-	user varchar(128) REFERENCES users(name),
-	name varchar(128) NOT NULL,
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	when DATE DEFAULT CURRENT_DATE,
+	user TEXT NOT NULL,
+	name TEXT NOT NULL,
 	pattern TEXT NOT NULL,
 	match TEXT NOT NULL,
-	elapsed REAL NOT NULL,
-	created_at DATETIME DEFAULT CURRENT_TIMESTAMP()
+	elapsed int DEFAULT 60,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP	
 );	
 	`
 

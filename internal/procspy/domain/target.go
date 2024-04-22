@@ -3,161 +3,64 @@ package domain
 import (
 	"encoding/json"
 	"log"
-	"regexp"
 )
 
 type Target struct {
-	User       string  `json:"user"`
-	Name       string  `json:"name"`
-	Pattern    string  `json:"pattern"`
-	Elapsed    float64 `json:"elapsed,omitempty"`
-	Limit      float64 `json:"limit"`
-	Kill       bool    `json:"kill"`
-	SoSource   string  `json:"so_source,omitempty"`
-	CheckCmd   string  `json:"check_cmd,omitempty"`
-	WarnCmd    string  `json:"warn_cmd,omitempty"`
-	ElapsedCmd string  `json:"elapsed_cmd,omitempty"`
-	regex      *regexp.Regexp
+	User           string `json:"user"`
+	Name           string `json:"name"`
+	Pattern        string `json:"pattern"`
+	Limit          int    `json:"limit"`
+	WarningOn      int    `json:"warning_on"`
+	Kill           bool   `json:"kill"`
+	Source         string `json:"source,omitempty"`
+	CheckCommand   string `json:"check_command,omitempty"`
+	WarningCommand string `json:"warning_command,omitempty"`
+	LimitCommand   string `json:"limit_command,omitempty"`
 }
 
-func NewTarget(user string, name string, limit float64, pattern string, kill bool) *Target {
+func NewTarget(user string, name string, pattern string, limit int, warningOn int, kill bool, source string, checkCommand string, warningCommand string, limitCommand string) *Target {
 	return &Target{
-		User:    user,
-		Name:    name,
-		Elapsed: 0,
-		Limit:   limit,
-		Pattern: pattern,
-		Kill:    kill,
-		regex:   regexp.MustCompile(pattern),
+		User:           user,
+		Name:           name,
+		Pattern:        pattern,
+		Limit:          limit,
+		WarningOn:      warningOn,
+		Kill:           kill,
+		Source:         source,
+		CheckCommand:   checkCommand,
+		WarningCommand: warningCommand,
+		LimitCommand:   limitCommand,
 	}
 }
 
-func (t *Target) GetUser() string {
-	return t.User
-}
-
-func (t *Target) SetUser(user string) {
-	t.User = user
-}
-
-func (t *Target) GetName() string {
-	return t.Name
-}
-
-func (t *Target) GetPattern() string {
-	return t.Pattern
-}
-
-func (t *Target) SetPattern(pattern string) {
-	t.Pattern = pattern
-}
-
-func (t *Target) SetName(name string) {
-	t.Name = name
-}
-
-func (t *Target) SetLimit(limit float64) {
-	t.Limit = limit
-}
-
-func (t *Target) SetKill(kill bool) {
-	t.Kill = kill
-}
-
-func (t *Target) SetElapsedCommand(command string) {
-	t.ElapsedCmd = command
-}
-
-func (t *Target) SetCheckCommand(command string) {
-	t.CheckCmd = command
-}
-
-func (t *Target) SetWarnCommand(command string) {
-	t.WarnCmd = command
-}
-
-func (t *Target) GetCheckCommand() string {
-	return t.CheckCmd
-}
-
-func (t *Target) GetWarnCommand() string {
-	return t.WarnCmd
-}
-
-func (t *Target) SetElapsed(elapsed float64) {
-	t.Elapsed = elapsed
-}
-
-func (t *Target) AddElapsed(elapsed float64) {
-	t.Elapsed += elapsed
-}
-
-func (t *Target) GetElapsed() float64 {
-	return t.Elapsed
-}
-
-func (t *Target) GetLimit() float64 {
-	return t.Limit
-}
-
-func (t *Target) GetKill() bool {
-	return t.Kill
-}
-
-func (t *Target) GetElapsedCommand() string {
-	return t.ElapsedCmd
-}
-
-func (t *Target) SetSoSource(soSource string) {
-	t.SoSource = soSource
-}
-
-func (t *Target) GetSoSource() string {
-	return t.SoSource
-}
-
-func (t *Target) Match(command string) bool {
-	if t.regex == nil {
-		log.Printf("[Domain.Target] Trying to compile regex for target %s -> regex: [%s]", t.Name, t.Pattern)
-		t.regex = regexp.MustCompile(t.Pattern)
+func (t *Target) ToLog() string {
+	ret, err := json.Marshal(t)
+	if err != nil {
+		log.Printf("[domain.Target] Error parsing json: %s", err)
+		return ""
 	}
-
-	if t.regex == nil {
-		log.Printf("[Domain.Target] Error matching target %s: regex is nil", t.Name)
-		return false
-	}
-
-	return t.regex.MatchString(command)
+	return string(ret)
 }
-
-func (t *Target) IsExpired() bool {
-	if t.GetLimit() <= 0 {
-		return false
-	}
-
-	return t.GetElapsed() > t.GetLimit()
-}
-
 func (t *Target) ToJson() string {
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
-		log.Printf("[Domain.Target] Error marshalling target: %s", err)
+		log.Printf("[domain.Target] Error parsing json: %s", err)
 	}
 
 	return string(ret)
 }
 
-func TargetFromJson(jsonString string) (*Target, error) {
-	ret := NewTarget("", "", 0, "", false)
-	err := json.Unmarshal([]byte(jsonString), &ret)
+type TargetList struct {
+	Targets []*Target `json:"targets"`
+}
+
+func TargetListFromJson(jsonString string) (*TargetList, error) {
+	ret := &TargetList{}
+	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[Domain.Target] Error unmarshalling target: %s", err)
+		log.Printf("[domain.Target] Error parsing json: %s", err)
 		return nil, err
 	}
 
 	return ret, nil
-}
-
-func (t *Target) ResetElapsed() {
-	t.Elapsed = 0
 }

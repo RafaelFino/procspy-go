@@ -6,96 +6,51 @@ import (
 	"net/http"
 	"procspy/internal/procspy/domain"
 	"procspy/internal/procspy/service"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Match struct {
-	auth    *service.Auth
 	service *service.Match
-	user    *service.User
+	users   *service.Users
 }
 
-func NewMatch(matchService *service.Match, auth *service.Auth, userService *service.User) *Match {
+func NewMatch(matchService *service.Match, usersService *service.Users) *Match {
 	return &Match{
-		auth:    auth,
-		user:    userService,
+		users:   usersService,
 		service: matchService,
 	}
 }
 
-// InsertMatch is a method to insert a match
-// It receives a request with a name, pattern, match and elapsed
-// It returns an error if the match can't be inserted
-// Body request example:
-//
-//	{
-//		"name": "<name>",
-//		"pattern": "<pattern>",
-//		"match": "<match>",
-//		"elapsed": "<elapsed>"
-//	}
-//
-// Ok Response Example:
-//
-//	{
-//		"message": "match inserted",
-//		"timestamp": "<timestamp>"
-//	}
-//
-// Error Response Example:
-//
-//	{
-//		"error": "internal error",
-//		"timestamp": "<timestamp>"
-//	}
 func (m *Match) InsertMatch(ctx *gin.Context) {
-	user, err := ValidateRequest(ctx, m.user, m.auth)
+	user, err := ValidateUser(m.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Match] InsertMatch -> Error validating request: %s", err)
-		return
-	}
-
-	bodyKeys := []string{"name", "pattern", "match", "elapsed"}
-	body, err := GetFromBody(ctx, m.auth, bodyKeys)
-
-	if err != nil {
-		log.Printf("[handler.Match] InsertMatch -> Error reading request body: %s", err)
-		return
-	}
-
-	name := body["name"]
-	pattern := body["pattern"]
-	match := body["match"]
-	elapsed, err := strconv.ParseFloat(body["elapsed"], 64)
-
-	if err != nil {
-		log.Printf("[handler.Match] InsertMatch -> Error parsing elapsed: %s", err)
-		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
-			"error":     "invalid request",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
-		})
-		return
-	}
-
-	if name != user.GetName() {
-		log.Printf("[handler.Match] InsertMatch -> User %s is not allowed to insert match for %s", user.GetName(), name)
+		log.Printf("[handler.Match] [%s] InsertMatch -> Error validating user: %s", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
-			"error":     "unauthorized",
+			"error":     "user not found",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
 
-	data := domain.NewMatch(user.GetName(), name, pattern, match, elapsed)
+	var match *domain.Match
 
-	err = m.service.InsertMatch(data)
+	if err := ctx.BindJSON(match); err != nil {
+		log.Printf("[handler.Match] [%s] InsertMatch -> Error binding json: %s", user, err)
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+			"error":     "invalid json",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+
+		return
+	}
+
+	err = m.service.InsertMatch(match)
 
 	if err != nil {
-		log.Printf("[handler.Match] InsertMatch -> Error inserting match: %s (match: %s)", err, data.ToJson())
+		log.Printf("[handler.Match] [%s] InsertMatch -> Error inserting match: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
@@ -103,7 +58,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("[handler.Match] InsertMatch -> Match inserted for %s", user.GetName())
+	log.Printf("[handler.Match] [%s] InsertMatch -> Match Inserted: %s", user, match.ToLog())
 
 	ctx.IndentedJSON(http.StatusCreated, gin.H{
 		"message":   "match inserted",
@@ -111,57 +66,28 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	})
 }
 
-// GetMatches is a method to get the elapsed matches
-// It returns the elapsed matches
-// It returns an error if the matches can't be retrieved
-// Ok Response Example:
-//
-//	{
-//		"matches": [
-//			{
-//				"name": "<name>",
-//				"pattern": "<pattern>",
-//				"match": "<match>",
-//				"elapsed": "<elapsed>",
-//				"created_at": "<created_at>"
-//			},
-//			{
-//				"name": "<name>",
-//				"pattern": "<pattern>",
-//				"match": "<match>",
-//				"elapsed": "<elapsed>",
-//				"created_at": "<created_at>"
-//			}
-//		],
-//		"timestamp": "<timestamp>"
-//	}
-//
-// Error Response Example:
-//
-//	{
-//		"error": "internal error",
-//		"timestamp": "<timestamp>"
-//	}
 func (m *Match) GetMatches(ctx *gin.Context) {
-	user, err := ValidateRequest(ctx, m.user, m.auth)
+	user, err := ValidateUser(m.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Match] GetMatches -> Error validating request: %s", err)
+		log.Printf("[handler.Match] [%s] GetMatches -> Error validating user: %s", user, err)
+		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"error":     "user not found",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
 		return
 	}
 
-	matches, err := m.service.GetMatches(user.GetName())
+	matches, err := m.service.GetMatches(user)
 
 	if err != nil {
-		log.Printf("[handler.Match] GetMatches -> Error getting elapsed: %s", err)
+		log.Printf("[handler.Match] [%s] GetMatches -> Error getting matches: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 		})
 		return
 	}
-
-	log.Printf("[handler.Match] GetMatches -> %d matches for %s", len(matches), user.GetName())
 
 	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"matches":   matches,

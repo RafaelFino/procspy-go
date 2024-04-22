@@ -8,24 +8,44 @@ import (
 
 type Match struct {
 	storage *storage.Match
-	dbConn  *storage.DbConnection
 }
 
-func NewMatch(dbConn *storage.DbConnection) *Match {
+func NewMatch(conn *storage.DbConnection) *Match {
 	ret := &Match{
-		dbConn:  dbConn,
-		storage: storage.NewMatch(dbConn),
+		storage: storage.NewMatch(conn),
+	}
+
+	log.Printf("[service.Match] Initializing storage")
+
+	err := ret.storage.Init()
+
+	if err != nil {
+		log.Printf("[service.Match] Error initializing storage: %s", err)
+		panic(err)
 	}
 
 	return ret
 }
 
+func (m *Match) Close() error {
+	log.Printf("[service.Match] Closing storage")
+	return m.storage.Close()
+}
+
 func (m *Match) InsertMatch(match *domain.Match) error {
-	log.Printf("[service.Match] Inserting match: %s", match.Name)
+	log.Printf("[service.Match] Inserting match: %s", match.Pattern)
 	return m.storage.InsertMatch(match)
 }
 
 func (m *Match) GetMatches(user string) (map[string]float64, error) {
-	log.Printf("[service.Match] Getting matches: %s", user)
-	return m.storage.GetMatches(user)
+	log.Printf("[service.Match] Getting matches")
+	data, err := m.storage.GetMatches(user)
+
+	if err != nil {
+		log.Printf("[service.Match] Error getting matches: %s", err)
+	} else {
+		log.Printf("[service.Match] Got matches: %v", data)
+	}
+
+	return data, err
 }

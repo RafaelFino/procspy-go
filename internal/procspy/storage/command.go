@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"log"
+	"procspy/internal/procspy/domain"
 )
 
 type Command struct {
@@ -27,13 +28,14 @@ func NewCommand(dbConn *DbConnection) *Command {
 func (c *Command) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS command_log (
-	id SERIAL PRIMARY KEY,
-	user varchar(128) REFERENCES users(name),
-	name varchar(128) NOT NULL,
-	command_type varchar(128) DEFAULT NULL,
-	command TEXT NOT NULL,
-	comand_return TEXT DEFAULT NULL,
-	created_at DATETIME DEFAULT CURRENT_TIMESTAMP()
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user TEXT NOT NULL,
+	name TEXT NOT NULL,
+	command_line TEXT NOT NULL,
+	command_return TEXT DEFAULT NULL,
+	source TEXT NOT NULL,
+	command_log TEXT DEFAULT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );	
 	`
 
@@ -60,32 +62,22 @@ func (c *Command) Close() error {
 	return c.conn.Close()
 }
 
-func (c *Command) InsertCommand(user string, name string, commandType string, command string, commandReturn string) error {
+func (c *Command) InsertCommand(cmd *domain.Command) error {
 	insert := `
-INSERT INTO command_log 
-(
+INSERT INTO command_log (
 	user, 
 	name, 
-	command_type, 
-	command, 
-	command_return
-) 
+	command_line, 
+	command_return, 
+	source, 
+	command_log)
 VALUES 
-(	?, 
-	?, 
-	?, 
-	?, 
-	?
-);`
-	if c.conn == nil {
-		log.Printf("[storage.Command] Error logging command: db is nil")
-		return errors.New("db is nil")
-	}
-
-	err := c.conn.Exec(insert, user, name, commandType, command, commandReturn)
+	(?, ?, ?, ?, ?, ?)
+`
+	err := c.conn.Exec(insert, cmd.User, cmd.Name, cmd.CommandLine, cmd.Return, cmd.Source, cmd.CommandLog)
 
 	if err != nil {
-		log.Printf("[storage.Command] Error logging command: %s", err)
+		log.Printf("[storage.Command] Error executing query: %s -> error: %s", insert, err)
 	}
 
 	return err

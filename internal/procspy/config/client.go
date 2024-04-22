@@ -1,68 +1,56 @@
 package config
 
 import (
-	"bufio"
 	"encoding/json"
 	"log"
-	"os"
+
+	"procspy/internal/procspy/domain"
 )
 
 type Client struct {
-	Interval  int    `json:"interval"`
-	LogPath   string `json:"log_path"`
-	ServerURL string `json:"server_url"`
-	Key       string `json:"key"`
-	User      string `json:"user"`
+	Interval  int             `json:"interval"`
+	LogPath   string          `json:"log_path"`
+	ServerURL string          `json:"server_url"`
+	User      string          `json:"user"`
+	Targets   []domain.Target `json:"targets"`
 }
 
 func NewConfig() *Client {
-	ret := &Client{
-		Interval: 60,
-		LogPath:  "logs",
+	return &Client{
+		Interval: 30,
+		LogPath:  "log/procspy.log",
+		Targets:  []domain.Target{},
 	}
-
-	return ret
-}
-
-func LoadClientConfig(filename string) (*Client, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		log.Printf("Error opening file: %s", err)
-		return nil, err
-	}
-	defer file.Close()
-
-	jsonString := ""
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		jsonString += scanner.Text()
-	}
-
-	ret, err := ClientConfigFromJson(jsonString)
-	if err != nil {
-		log.Printf("Error parsing json: %s", err)
-		return nil, err
-	}
-
-	return ret, nil
 }
 
 func (c *Client) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
-		log.Printf("Error marshalling config: %s", err)
+		log.Printf("[Client] Error marshalling config: %s", err)
 	}
 
 	return string(ret)
 }
 
-func ClientConfigFromJson(jsonString string) (*Client, error) {
-	ret := NewConfig()
-	err := json.Unmarshal([]byte(jsonString), &ret)
+func ConfigFromJson(jsonString string) (*Client, error) {
+	ret := &Client{}
+	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("Error unmarshalling config: %s", err)
+		log.Printf("[Client] Error unmarshalling config: %s", err)
 		return nil, err
 	}
 
 	return ret, nil
+}
+
+func (c *Client) ClearTargets() {
+	c.Targets = []domain.Target{}
+}
+
+func (c *Client) AddTargets(targets []domain.Target) {
+	c.Targets = append(c.Targets, targets...)
+}
+
+func (c *Client) AddTarget(t domain.Target) {
+	c.Targets = append(c.Targets, t)
 }

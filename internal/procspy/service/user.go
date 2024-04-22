@@ -1,36 +1,26 @@
 package service
 
-import (
-	"log"
-	"procspy/internal/procspy/domain"
-	"procspy/internal/procspy/storage"
-)
+import "procspy/internal/procspy/config"
 
-type User struct {
-	storage *storage.User
-	dbConn  *storage.DbConnection
+type Users struct {
+	config *config.Server
 }
 
-func NewUser(dbConn *storage.DbConnection) *User {
-	ret := &User{
-		dbConn:  dbConn,
-		storage: storage.NewUser(dbConn),
+func NewUsers(config *config.Server) *Users {
+	return &Users{config: config}
+}
+
+func (u *Users) GetUsers() ([]string, error) {
+	var ret []string
+
+	for k := range u.config.UserTarges {
+		ret = append(ret, k)
 	}
 
-	return ret
+	return ret, nil
 }
 
-func (u *User) CreateUser(name string, key string) error {
-	log.Printf("[service.User] Creating user: %s", name)
-	return u.storage.CreateUser(name, key)
-}
-
-func (u *User) ApproveUser(name string) error {
-	log.Printf("[service.User] Approving user: %s", name)
-	return u.storage.ApproveUser(name)
-}
-
-func (u *User) GetUser(user string) (*domain.User, error) {
-	log.Printf("[service.User] Getting user: %s", user)
-	return u.storage.GetUser(user)
+func (u *Users) Exists(user string) bool {
+	_, ok := u.config.UserTarges[user]
+	return ok
 }

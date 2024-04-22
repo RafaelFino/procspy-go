@@ -2,14 +2,15 @@ package client
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"os/exec"
-	"procspy/internal/procspy"
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/domain"
-	"procspy/internal/procspy/service"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/go-ps"
@@ -20,9 +21,6 @@ type Spy struct {
 	Config     *config.Client
 	enabled    bool
 	currentDay int
-	targets    []*domain.Target
-	token      string
-	pubKey     string
 }
 
 func NewSpy(config *config.Client) *Spy {
@@ -30,14 +28,9 @@ func NewSpy(config *config.Client) *Spy {
 		Config:     config,
 		enabled:    false,
 		currentDay: time.Now().Day(),
-		targets:    make([]*domain.Target, 0),
-		token:      "",
+		targets:    nil,
 	}
 	/*
-		s.router.GET("/key", s.authHandler.GetPubKey)
-		s.router.POST("/user/:user", s.userHandler.CreateUser)
-		s.router.POST("/auth/", s.authHandler.Authenticate)
-
 		s.router.GET("/targets/:user", s.targetHandler.GetTargets)
 		s.router.POST("/match/:user", s.matchHandler.InsertMatch)
 		s.router.GET("/match/:user", s.matchHandler.GetMatches)
@@ -46,103 +39,176 @@ func NewSpy(config *config.Client) *Spy {
 	return ret
 }
 
-func (s *Spy) Auth() error {
-	keyUrl := fmt.Sprintf("%s/key/", s.Config.ServerURL)
-	data, status, err := procspy.HttpGet(keyUrl, "")
-
+func (s *Spy) httpGet(url string) (string, int, error) {
+	res, err := http.Get(url)
 	if err != nil {
-		log.Fatalf("[Auth] Error getting public key, http status code: %s from %s -> error: %s", status, keyUrl, err)
-		return err
+		log.Printf("[client] Error getting url: %s", err)
+		return "", http.StatusInternalServerError, err
 	}
 
-	if status != 200 {
-		log.Fatalf("[Auth] Error getting public key, http status code: %s from %s", status, keyUrl)
-		return fmt.Errorf("http get pub key error, http status code: %s", status)
-	}
-
-	pubKey, ok := data["key"]
-
-	if !ok {
-		log.Fatalf("[Auth] Error getting public key: %s -> bad format", err)
-		return err
-	}
-
-	log.Printf("[Auth] Public key: %s", pubKey)
-	s.pubKey = pubKey.(string)
-
-	userInfo := fmt.Sprintf(`{ "user": "%s"}`, s.Config.User)
-
-	payload, err := service.Cypher(userInfo, []byte(s.pubKey))
-
-	authUrl := fmt.Sprintf("%s/auth/", s.Config.ServerURL)
-	resp, status, err := procspy.HttpPost(authUrl, "", payload)
-
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Fatalf("[Auth] Error authenticating user: %s -> %s", s.Config.User, err)
-		return err
+		log.Printf("[client] Error reading body: %s", err)
+		return "", res.StatusCode, err
 	}
 
-	if status != 200 {
-		log.Fatalf("[Auth] Error authenticating user: %s -> http status code: %s", s.Config.User, status)
-		return fmt.Errorf("http post auth error, http status code: %s", status)
-	}
+	log.Printf("[client] %d Response: %s", res.StatusCode, body)
 
-	token, ok := resp["token"]
-
-	s.token = token.(string)
-
-	log.Printf("[Auth] Token: %s", s.token)
+	return string(body), res.StatusCode, nil
 }
 
-func (s *Spy) GetTargets() error {
-	if s.token == "" {
-		err := s.Auth()
-		if err != nil {
-			return err
-		}
+func (s *Spy) httpPost(url string, data string) (string, int, error) {
+	res, err := http.Post(url, "application/json", nil)
+	if err != nil {
+		log.Printf("[client] Error posting url: %s", err)
+		return "", http.StatusInternalServerError, err
 	}
 
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("[client] Error reading body: %s", err)
+		return "", res.StatusCode, err
+	}
+
+	log.Printf("[client] %d Response: %s", res.StatusCode, body)
+
+	return string(body), res.StatusCode, nil
+}
+
+func (s *Spy) getTargets() ([]*domain.Target, error) {
 	targetUrl := fmt.Sprintf("%s/targets/%s", s.Config.ServerURL, s.Config.User)
-	data, status, err := procspy.HttpGet(targetUrl, s.token)
+
+	data, status, err := s.httpGet(targetUrl)
 
 	if err != nil {
 		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s -> error: %s", status, targetUrl, err)
-		return err
+		return nil, err
 	}
 
-	if status != 200 {
+	if status != http.StatusOK {
 		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s", status, targetUrl)
-		return fmt.Errorf("http get targets error, http status code: %s", status)
+		return nil, fmt.Errorf("http get targets error, http status code: %s", status)
 	}
 
-	targets, ok := data["targets"]
+	targets, err := domain.TargetListFromJson(data)
 
-	if !ok {
+	if err != nil {
 		log.Fatalf("[GetTargets] Error getting targets: %s -> bad format", err)
-		return err
+		return nil, err
+	}
+
+	if targets == nil {
+		log.Fatalf("[GetTargets] Error getting targets: nil")
+		return nil, fmt.Errorf("nil targets")
+	}
+
+	if len(targets.Targets) == 0 {
+		log.Printf("[GetTargets] No targets found")
+		return targets.Targets, nil
 	}
 
 	log.Printf("[GetTargets] Targets: %s", targets)
-	s.targets = targets.([]*domain.Target)
+
+	return targets.Targets, nil
+}
+
+func (s *Spy) getMatches() (map[string]float64, error) {
+	matchUrl := fmt.Sprintf("%s/match/%s", s.Config.ServerURL, s.Config.User)
+
+	data, status, err := s.httpGet(matchUrl)
+
+	if err != nil {
+		log.Fatalf("[GetMatches] Error getting matches, http status code: %s from %s -> error: %s", status, matchUrl, err)
+		return nil, err
+	}
+
+	if status != http.StatusOK {
+		log.Fatalf("[GetMatches] Error getting matches, http status code: %s from %s", status, matchUrl)
+		return nil, fmt.Errorf("http get matches error, http status code: %s", status)
+	}
+
+	matches, err := domain.MatchListFromJson(data)
+
+	if err != nil {
+		log.Fatalf("[GetMatches] Error getting matches: %s -> bad format", err)
+		return nil, err
+	}
+
+	if matches == nil {
+		log.Fatalf("[GetMatches] Error getting matches: nil")
+		return nil, fmt.Errorf("nil matches")
+	}
+
+	if len(matches.Matches) == 0 {
+		log.Printf("[GetMatches] No matches found")
+		return matches.Matches, nil
+	}
+
+	log.Printf("[GetMatches] Matches: %s", matches)
+
+	return matches.Matches, nil
+}
+
+func (s *Spy) postMatch(match *domain.Match) error {
+	matchUrl := fmt.Sprintf("%s/match/%s", s.Config.ServerURL, s.Config.User)
+
+	data, status, err := s.httpPost(matchUrl, match.ToJson())
+
+	if err != nil {
+		log.Fatalf("[PostMatch] Error posting match, http status code: %s to %s -> error: %s", status, matchUrl, err)
+		return err
+	}
+
+	if status != http.StatusCreated {
+		log.Fatalf("[PostMatch] Error posting match, http status code: %s to %s", status, matchUrl)
+		return fmt.Errorf("http post match error, http status code: %s", status)
+	}
+
+	log.Printf("[PostMatch] Match posted: %s", data)
+
+	return nil
+}
+
+func (s *Spy) postCommand(cmd *domain.Command) error {
+	commandUrl := fmt.Sprintf("%s/command/%s", s.Config.ServerURL, s.Config.User)
+
+	data, status, err := s.httpPost(commandUrl, cmd.ToJson())
+
+	if err != nil {
+		log.Fatalf("[PostCommand] Error posting command, http status code: %s to %s -> error: %s", status, commandUrl, err)
+		return err
+	}
+
+	if status != http.StatusCreated {
+		log.Fatalf("[PostCommand] Error posting command, http status code: %s to %s", status, commandUrl)
+		return fmt.Errorf("http post command error, http status code: %s", status)
+	}
+
+	log.Printf("[PostCommand] Command posted: %s", data)
 
 	return nil
 }
 
 func (s *Spy) run(last time.Time) error {
-	// reload from web?
-	err := s.Config.UpdateFromUrl()
-	if err != nil {
-		log.Printf("Error loading config from url: %s", err)
-	}
+	log.Printf("Running spy...")
 
-	storage, err := NewStorage(s.Config.DBPath)
+	elapsed := roundFloat(time.Since(last).Seconds(), 2)
+
+	targets, err := s.getTargets()
 
 	if err != nil {
-		log.Printf("Error opening database: %s", err)
+		log.Printf("Error getting targets: %s", err)
 		return err
 	}
 
-	defer storage.Close()
+	matches, err := s.getMatches()
+
+	if err != nil {
+		log.Printf("Error getting matches: %s", err)
+		return err
+	}
 
 	processes, err := ps.Processes()
 	if err != nil {
@@ -150,78 +216,85 @@ func (s *Spy) run(last time.Time) error {
 		return err
 	}
 
-	if s.currentDay != time.Now().Day() {
-		log.Printf("Resetting elapsed time for all processes, day changed")
-		s.currentDay = time.Now().Day()
-
-		//reload from web?
-		err = s.Config.UpdateFromUrl()
-		if err != nil {
-			log.Printf("Error loading config from url: %s", err)
+	for _, target := range targets {
+		if targetElapsed, found := matches[target.Name]; found {
+			target.AddElapsed(targetElapsed)
+			log.Printf(" > [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
 		}
 
-		for index, target := range s.Config.Targets {
-			log.Printf(" # [%s] Resetting elapsed time", target.GetName())
-			target.ResetElapsed()
-			s.Config.Targets[index] = target
-		}
-	}
-
-	elapsed := roundFloat(time.Since(last).Seconds(), 2)
-
-	if elapsed < float64(s.Config.Interval) {
-		return nil
-	}
-
-	for index, target := range s.Config.Targets {
 		match := false
 		pids := make([]int, 0)
+		names := make([]string, 0)
 
 		for _, proc := range processes {
 			name := proc.Executable()
 
 			if target.Match(name) {
-				match = true
 				pid := proc.Pid()
+				match = true
 				pids = append(pids, pid)
+				names = append(names, name)
+			}
+		}
+
+		if len(target.CheckCommand) > 0 {
+			cmdLog, err := executeCommand(target.CheckCommand)
+
+			if err != nil {
+				log.Printf(" > [%s] Error executing check command [%s]: %s -> %s", target.Name, target.CheckCommand, err, cmdLog)
+			} else {
+				log.Printf(" > [%s] Check command [%s] -> %s", target.Name, target.CheckCommand, cmdLog)
 			}
 		}
 
 		if match {
-			log.Printf(" > [%s] Match process with pattern %s -> %v", target.GetName(), target.GetPattern(), pids)
-			target.AddElapsed(elapsed)
+			log.Printf(" > [%s] Found %d processes: %v", target.Name, len(pids), pids)
+			matches := strings.Join(names, "//")
 
-			err = storage.InsertProcess(target.GetName(), elapsed, target.GetPattern(), target.GetCommand(), target.GetKill())
+			log.Printf(" > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
+			err = s.postMatch(domain.NewMatch(s.Config.User, target.Name, target.Pattern, matches, elapsed))
+
 			if err != nil {
-				log.Printf(" [%s] Error inserting process: %s", target.GetName(), err)
+				log.Printf(" [%s] Error inserting process: %s", target.Name, err)
 			}
 
+			target.AddElapsed(elapsed)
 			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
 
-			if target.IsExpired() {
-				log.Printf(" >> [%s] Exceeded limit of %.2f seconds", target.GetName(), target.GetLimit())
-				if target.GetKill() {
-					log.Printf(" >> [%s] Killing processes: %v", target.GetName(), pids)
-					s.kill(pids)
-					log.Printf(" >> [%s] %d processes terminated", target.GetName(), len(pids))
-				}
+			if target.CheckLimit() {
+				log.Printf(" >> [%s] Exceeded limit of %.2f seconds", target.Name, target.Limit)
 
-				err = storage.InsertMatch(target.GetName(), target.GetPattern(), target.GetCommand(), target.GetKill())
-				if err != nil {
-					log.Printf("[%s] Error inserting match: %s", target.GetName(), err)
-				}
+				if len(target.LimitCommand) > 0 {
+					cmdLog, err := executeCommand(target.LimitCommand)
 
-				if len(target.GetCommand()) > 0 {
-					log.Printf(" >> [%s] Executing command: %s", target.GetName(), target.GetCommand())
-					err = executeCommand(target.GetCommand())
 					if err != nil {
-						log.Printf(" [%s] Error executing command %s: %s", target.GetName(), target.GetCommand(), err)
+						log.Printf(" >> [%s] Error executing limit command [%s]: %s -> %s", target.Name, target.LimitCommand, err, cmdLog)
+					} else {
+						log.Printf(" >> [%s] Limit command [%s] -> %s", target.Name, target.LimitCommand, cmdLog)
+					}
+				}
+
+				if target.Kill {
+					log.Printf(" >> [%s] Killing processes: %v", target.Name, pids)
+					s.kill(pids)
+					log.Printf(" >> [%s] %d processes terminated", target.Name, len(pids))
+				}
+			} else {
+				if target.CheckWarning() {
+					log.Printf(" >> [%s] Warning on %.2f seconds", target.Name, target.WarningOn)
+
+					if len(target.WarningCommand) > 0 {
+						cmdLog, err := executeCommand(target.WarningCommand)
+
+						if err != nil {
+							log.Printf(" >> [%s] Error executing warning command [%s]: %s -> %s", target.Name, target.WarningCommand, err, cmdLog)
+						} else {
+							log.Printf(" >> [%s] Warning command [%s] -> %s", target.Name, target.WarningCommand, cmdLog)
+						}
 					}
 				}
 			}
 		}
-
-		s.Config.Targets[index] = target
 	}
 
 	return err
@@ -245,23 +318,11 @@ func (s *Spy) kill(pids []int) {
 	}
 }
 
-func (s *Spy) Start(onUpdate chan bool) {
-	s.loadFromDatabase()
-
+func (s *Spy) Start() {
 	last := time.Now()
 	s.enabled = true
 
 	log.Printf("Starting with config %s", s.Config.ToJson())
-
-	go func() {
-		for {
-			select {
-			case <-onUpdate:
-				log.Printf("Spy: Config updated, reloading...")
-				s.loadFromDatabase()
-			}
-		}
-	}()
 
 	for s.enabled {
 		s.run(last)
@@ -278,40 +339,16 @@ func (s *Spy) IsEnabled() bool {
 	return s.enabled
 }
 
-func (s *Spy) loadFromDatabase() {
-	storage, err := NewStorage(s.Config.DBPath)
-
-	if err != nil {
-		log.Printf("Error opening database: %s", err)
-		return
-	}
-
-	defer storage.Close()
-
-	elapsed, err := storage.GetElapsed()
-	if err != nil {
-		log.Printf("Error getting elapsed: %s", err)
-		return
-	}
-
-	for index, target := range s.Config.Targets {
-		if elapsed, found := elapsed[target.GetName()]; found && elapsed > 0 {
-			target.ResetElapsed()
-			target.AddElapsed(elapsed)
-			log.Printf(" > [%s] Loaded %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
-			s.Config.Targets[index] = target
-		}
-	}
-}
-
 func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
 
-func executeCommand(command string) error {
+func executeCommand(command string) (string, error) {
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdout = log.Writer()
 	cmd.Stderr = log.Writer()
-	return cmd.Run()
+	ret := cmd.Run()
+
+	return cmd.Stdout.String() + "\n" + cmd.Stderr.String(), ret
 }

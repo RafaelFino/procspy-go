@@ -8,7 +8,6 @@ import (
 
 type Match struct {
 	User      string    `json:"user"`
-	UserID    int       `json:"user_id"`
 	Name      string    `json:"name"`
 	Pattern   string    `json:"pattern"`
 	Match     string    `json:"match"`
@@ -16,8 +15,12 @@ type Match struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
+type MatchList struct {
+	Matches map[string]float64 `json:"matches"`
+}
+
 func NewMatch(user string, name string, pattern string, match string, elapsed float64) *Match {
-	return &Match{
+	ret := &Match{
 		User:      user,
 		Name:      name,
 		Pattern:   pattern,
@@ -25,12 +28,14 @@ func NewMatch(user string, name string, pattern string, match string, elapsed fl
 		Elapsed:   elapsed,
 		CreatedAt: time.Now(),
 	}
+
+	return ret
 }
 
 func (m *Match) ToLog() string {
 	ret, err := json.Marshal(m)
 	if err != nil {
-		log.Printf("[Match] Error parsing json: %s", err)
+		log.Printf("[domain.Match] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
@@ -39,7 +44,7 @@ func (m *Match) ToLog() string {
 func (m *Match) ToJson() string {
 	ret, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
-		log.Printf("[Match] Error parsing json: %s", err)
+		log.Printf("[domain.Match] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
@@ -49,7 +54,17 @@ func MatchFromJson(jsonString string) (*Match, error) {
 	ret := &Match{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[Match] Error parsing json: %s", err)
+		log.Printf("[domain.Match] Error parsing json: %s", err)
+		return nil, err
+	}
+	return ret, nil
+}
+
+func MatchListFromJson(jsonString string) (*MatchList, error) {
+	ret := &MatchList{}
+	err := json.Unmarshal([]byte(jsonString), &ret)
+	if err != nil {
+		log.Printf("[domain.Match] Error parsing json: %s", err)
 		return nil, err
 	}
 	return ret, nil

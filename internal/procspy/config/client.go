@@ -4,23 +4,19 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-
-	"procspy/internal/procspy/domain"
 )
 
 type Client struct {
-	Interval  int             `json:"interval"`
-	LogPath   string          `json:"log_path"`
-	ServerURL string          `json:"server_url"`
-	User      string          `json:"user"`
-	Targets   []domain.Target `json:"targets"`
+	Interval  int    `json:"interval"`
+	LogPath   string `json:"log_path"`
+	ServerURL string `json:"server_url"`
+	User      string `json:"user"`
 }
 
 func NewConfig() *Client {
 	return &Client{
 		Interval: 30,
 		LogPath:  "log/procspy.log",
-		Targets:  []domain.Target{},
 	}
 }
 
@@ -44,18 +40,6 @@ func ConfigClientFromJson(jsonString string) (*Client, error) {
 	log.Printf("Client config: %s", ret.ToJson())
 
 	return ret, nil
-}
-
-func (c *Client) ClearTargets() {
-	c.Targets = []domain.Target{}
-}
-
-func (c *Client) AddTargets(targets []domain.Target) {
-	c.Targets = append(c.Targets, targets...)
-}
-
-func (c *Client) AddTarget(t domain.Target) {
-	c.Targets = append(c.Targets, t)
 }
 
 func ConfigClientFromFile(path string) (*Client, error) {

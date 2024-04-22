@@ -21,14 +21,8 @@ func main() {
 
 	configFile := os.Args[1]
 
-	jsonConfig, err := procspy.LoadFile(configFile)
+	cfg, err := config.ConfigServerFromFile(configFile)
 
-	if err != nil {
-		fmt.Printf("Error loading config file: %s", err)
-		os.Exit(1)
-	}
-
-	cfg, err := config.ServerFromJson(jsonConfig)
 	if err != nil {
 		fmt.Printf("Error loading config file: %s", err)
 		os.Exit(1)
@@ -74,7 +68,7 @@ func initLogger(path string) error {
 }
 
 func PrintLogo() {
-	fmt.Println(`
+	fmt.Print(`
  _____                                                          _____                                      
 |  __ \                                                        / ____|                                     
 | |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | (___     ___   _ __  __   __   ___   _ __  

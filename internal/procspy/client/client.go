@@ -28,7 +28,6 @@ func NewSpy(config *config.Client) *Spy {
 		Config:     config,
 		enabled:    false,
 		currentDay: time.Now().Day(),
-		targets:    nil,
 	}
 	/*
 		s.router.GET("/targets/:user", s.targetHandler.GetTargets)

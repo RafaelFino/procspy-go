@@ -5,6 +5,8 @@
     "api_port": 8080,
     "api_host": "localhost",
     "user_targets": {
-        "fino": "https://rgt-tools.duckdns.org/drive/api/public/dl/BBCMfrvm/procspy-fino.targets"
+        "fino": "https://rgt-tools.duckdns.org/drive/api/public/dl/BBCMfrvm/procspy-fino.targets",
+        "pepe": "https://rgt-tools.duckdns.org/drive/api/public/dl/KuH3f1y6/procspy-pepe.targets",
+        "beca": "https://rgt-tools.duckdns.org/drive/api/public/dl/zvuhsVkg/procspy-beca.targets"
     }
 }

@@ -244,7 +244,6 @@ func (s *Spy) run(last time.Time) error {
 			name := proc.Executable()
 
 			if target.Match(name) {
-				log.Printf("[Spy]  > [%s] Found process: %s", target.Name, name)
 				pid := proc.Pid()
 				match = true
 				pids = append(pids, pid)

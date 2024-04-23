@@ -26,8 +26,6 @@ func (t *Target) GetTargets(user string) (*domain.TargetList, error) {
 
 	for k, v := range t.urls {
 		if k == user {
-			log.Printf("[service.Target] Getting targets for user: %s -> %s", user, v)
-
 			data, err := t.getFromUrl(v)
 
 			if err != nil {

@@ -13,12 +13,14 @@ import (
 type Target struct {
 	service *service.Target
 	users   *service.Users
+	matches *service.Match
 }
 
-func NewTarget(targetService *service.Target, usersService *service.Users) *Target {
+func NewTarget(targetService *service.Target, usersService *service.Users, matches *service.Match) *Target {
 	return &Target{
 		service: targetService,
 		users:   usersService,
+		matches: matches,
 	}
 }
 
@@ -45,7 +47,23 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("[handler.Target] GetTargets -> %d targets for %s", len(targets.Targets), user)
+	matches, err := t.matches.GetMatches(user)
+
+	if err != nil {
+		log.Printf("[handler.Target] [%s] GetTargets -> Error getting matches: %s", user, err)
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"error":     "internal error",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return
+	}
+
+	for _, target := range targets.Targets {
+		if elapsed, ok := matches[target.Name]; ok {
+			target.AddElapsed(elapsed)
+		}
+	}
+
 	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"targets":   targets.Targets,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),

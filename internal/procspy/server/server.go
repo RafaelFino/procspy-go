@@ -54,7 +54,7 @@ func (s *Server) initServices() {
 
 	log.Printf("Initializing handlers...")
 	s.commandHandler = handlers.NewCommand(commandService, userService)
-	s.targetHandler = handlers.NewTarget(targetService, userService)
+	s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
 	s.matchHandler = handlers.NewMatch(matchService, userService)
 	log.Printf("Handlers initialized")
 }
@@ -74,7 +74,6 @@ func (s *Server) Start() {
 	s.router = gin.Default()
 	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
 	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
-	s.router.GET("/match/:user", s.matchHandler.GetMatches)
 	s.router.POST("/command/:user", s.commandHandler.InsertCommand)
 
 	log.Print("Router started")

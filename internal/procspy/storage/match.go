@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS matches (
 	elapsed int DEFAULT 60,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP	
 );	
-	`
-
+`
 	if m.conn == nil {
 		log.Printf("[storage.Match] Error creating tables: db is nil")
 		return errors.New("db is nil")

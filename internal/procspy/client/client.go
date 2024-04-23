@@ -1,8 +1,6 @@
 package client
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -116,50 +114,9 @@ func (s *Spy) getTargets() ([]*domain.Target, error) {
 		return targets.Targets, nil
 	}
 
-	hash := getMD5(s.targets)
-	newHash := getMD5(targets)
-
-	if hash != newHash {
-		log.Printf("[GetTargets] Targets changed -> \n%s", targets.ToLog())
-		s.targets = targets
-	}
+	s.targets = targets
 
 	return s.targets.Targets, nil
-}
-
-func (s *Spy) getMatches() (map[string]float64, error) {
-	matchUrl := fmt.Sprintf("%s/match/%s", s.Config.ServerURL, s.Config.User)
-
-	data, status, err := s.httpGet(matchUrl)
-
-	if err != nil {
-		log.Printf("[GetMatches] Error getting matches, http status code: %d from %s -> error: %s", status, matchUrl, err)
-		return nil, err
-	}
-
-	if status != http.StatusOK {
-		log.Printf("[GetMatches] Error getting matches, http status code: %d from %s", status, matchUrl)
-		return nil, fmt.Errorf("http get matches error, http status code: %d", status)
-	}
-
-	matches, err := domain.MatchListFromJson(data)
-
-	if err != nil {
-		log.Printf("[GetMatches] Error getting matches: %s -> bad format", err)
-		return nil, err
-	}
-
-	if matches == nil {
-		log.Printf("[GetMatches] Error getting matches: nil")
-		return nil, fmt.Errorf("nil matches")
-	}
-
-	if len(matches.Matches) == 0 {
-		log.Printf("[GetMatches] No matches found")
-		return matches.Matches, nil
-	}
-
-	return matches.Matches, nil
 }
 
 func (s *Spy) postMatch(match *domain.Match) error {
@@ -207,7 +164,8 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 }
 
 func (s *Spy) run(last time.Time) error {
-	log.Printf("[Spy] Running spy...")
+	log.Printf("[Spy] Running...")
+	defer log.Printf("[Spy] Finished!")
 
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 
@@ -218,13 +176,6 @@ func (s *Spy) run(last time.Time) error {
 		return err
 	}
 
-	matches, err := s.getMatches()
-
-	if err != nil {
-		log.Printf("[Spy] Error getting matches: %s", err)
-		return err
-	}
-
 	processes, err := ps.Processes()
 	if err != nil {
 		log.Printf("[Spy] Error getting processes: %s", err)
@@ -232,10 +183,6 @@ func (s *Spy) run(last time.Time) error {
 	}
 
 	for _, target := range targets {
-		if targetElapsed, found := matches[target.Name]; found {
-			target.AddElapsed(targetElapsed)
-		}
-
 		match := false
 		pids := make([]int, 0)
 		names := make(map[string]struct{})
@@ -415,12 +362,4 @@ func executeCommand(command string) (string, error) {
 	}
 
 	return string(buf), err
-}
-
-func getMD5(t *domain.TargetList) string {
-	text := t.Hash()
-	hash := md5.Sum([]byte(text))
-	ret := hex.EncodeToString(hash[:])
-
-	return ret
 }

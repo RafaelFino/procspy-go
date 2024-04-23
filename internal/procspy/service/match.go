@@ -38,13 +38,10 @@ func (m *Match) InsertMatch(match *domain.Match) error {
 }
 
 func (m *Match) GetMatches(user string) (map[string]float64, error) {
-	log.Printf("[service.Match] Getting matches")
 	data, err := m.storage.GetMatches(user)
 
 	if err != nil {
 		log.Printf("[service.Match] Error getting matches: %s", err)
-	} else {
-		log.Printf("[service.Match] Got matches: %v", data)
 	}
 
 	return data, err

@@ -103,7 +103,7 @@ FROM
 	matches
 WHERE
 	user = ?
-	and date(when) = current_date
+	and date(created_at) = current_date
 GROUP BY
 	name
 ORDER BY	

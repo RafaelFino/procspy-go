@@ -60,7 +60,7 @@ func (s *Server) initServices() {
 }
 
 func (s *Server) Start() {
-	log.Printf("Starting server on %s", s.config.APIPort)
+	log.Printf("Starting server on %s:%d", s.config.APIHost, s.config.APIPort)
 
 	gin.ForceConsoleColor()
 	gin.DefaultWriter = log.Writer()
@@ -75,7 +75,7 @@ func (s *Server) Start() {
 	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
 	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
 	s.router.GET("/match/:user", s.matchHandler.GetMatches)
-	s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
+	s.router.POST("/command/:user", s.commandHandler.InsertCommand)
 
 	log.Print("Router started")
 
@@ -85,7 +85,7 @@ func (s *Server) Start() {
 	}
 
 	go func() {
-		log.Printf("Server running under goroutine, listen and serve on %s", s.config.APIPort)
+		log.Printf("Server running under goroutine, listen and serve on %s:%d", s.config.APIHost, s.config.APIPort)
 		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("listen: %s\n", err)
 		}

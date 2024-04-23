@@ -47,7 +47,7 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 
 	log.Printf("[handler.Target] GetTargets -> %d targets for %s", len(targets.Targets), user)
 	ctx.IndentedJSON(http.StatusOK, gin.H{
-		"targets":   targets,
+		"targets":   targets.Targets,
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})
 }

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -21,6 +23,7 @@ type Spy struct {
 	Config     *config.Client
 	enabled    bool
 	currentDay int
+	targets    *domain.TargetList
 }
 
 func NewSpy(config *config.Client) *Spy {
@@ -28,6 +31,7 @@ func NewSpy(config *config.Client) *Spy {
 		Config:     config,
 		enabled:    false,
 		currentDay: time.Now().Day(),
+		targets:    domain.NewTargetList(),
 	}
 	/*
 		s.router.GET("/targets/:user", s.targetHandler.GetTargets)
@@ -52,13 +56,13 @@ func (s *Spy) httpGet(url string) (string, int, error) {
 		return "", res.StatusCode, err
 	}
 
-	log.Printf("[client] %d Response: %s", res.StatusCode, body)
+	//log.Printf("[client] %d Response: %s", res.StatusCode, body)
 
 	return string(body), res.StatusCode, nil
 }
 
 func (s *Spy) httpPost(url string, data string) (string, int, error) {
-	res, err := http.Post(url, "application/json", nil)
+	res, err := http.Post(url, "application/json", strings.NewReader(data))
 	if err != nil {
 		log.Printf("[client] Error posting url: %s", err)
 		return "", http.StatusInternalServerError, err
@@ -71,7 +75,7 @@ func (s *Spy) httpPost(url string, data string) (string, int, error) {
 		return "", res.StatusCode, err
 	}
 
-	log.Printf("[client] %d Response: %s", res.StatusCode, body)
+	//log.Printf("[client] %d Response: %s", res.StatusCode, body)
 
 	return string(body), res.StatusCode, nil
 }
@@ -82,13 +86,13 @@ func (s *Spy) getTargets() ([]*domain.Target, error) {
 	data, status, err := s.httpGet(targetUrl)
 
 	if err != nil {
-		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s -> error: %s", status, targetUrl, err)
+		log.Fatalf("[GetTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
 		return nil, err
 	}
 
 	if status != http.StatusOK {
-		log.Fatalf("[GetTargets] Error getting targets, http status code: %s from %s", status, targetUrl)
-		return nil, fmt.Errorf("http get targets error, http status code: %s", status)
+		log.Fatalf("[GetTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
+		return nil, fmt.Errorf("http get targets error, http status code: %d", status)
 	}
 
 	targets, err := domain.TargetListFromJson(data)
@@ -108,9 +112,15 @@ func (s *Spy) getTargets() ([]*domain.Target, error) {
 		return targets.Targets, nil
 	}
 
-	log.Printf("[GetTargets] Targets: %s", targets)
+	hash := getMD5(s.targets)
+	newHash := getMD5(targets)
 
-	return targets.Targets, nil
+	if hash != newHash {
+		log.Printf("[GetTargets] Targets changed, getting new -> %s", targets.ToLog())
+		s.targets = targets
+	}
+
+	return s.targets.Targets, nil
 }
 
 func (s *Spy) getMatches() (map[string]float64, error) {
@@ -119,13 +129,13 @@ func (s *Spy) getMatches() (map[string]float64, error) {
 	data, status, err := s.httpGet(matchUrl)
 
 	if err != nil {
-		log.Fatalf("[GetMatches] Error getting matches, http status code: %s from %s -> error: %s", status, matchUrl, err)
+		log.Fatalf("[GetMatches] Error getting matches, http status code: %d from %s -> error: %s", status, matchUrl, err)
 		return nil, err
 	}
 
 	if status != http.StatusOK {
-		log.Fatalf("[GetMatches] Error getting matches, http status code: %s from %s", status, matchUrl)
-		return nil, fmt.Errorf("http get matches error, http status code: %s", status)
+		log.Fatalf("[GetMatches] Error getting matches, http status code: %d from %s", status, matchUrl)
+		return nil, fmt.Errorf("http get matches error, http status code: %d", status)
 	}
 
 	matches, err := domain.MatchListFromJson(data)
@@ -145,7 +155,7 @@ func (s *Spy) getMatches() (map[string]float64, error) {
 		return matches.Matches, nil
 	}
 
-	log.Printf("[GetMatches] Matches: %s", matches)
+	//log.Printf("[GetMatches] Matches: %s", matches.ToLog())
 
 	return matches.Matches, nil
 }
@@ -156,13 +166,13 @@ func (s *Spy) postMatch(match *domain.Match) error {
 	data, status, err := s.httpPost(matchUrl, match.ToJson())
 
 	if err != nil {
-		log.Fatalf("[PostMatch] Error posting match, http status code: %s to %s -> error: %s", status, matchUrl, err)
+		log.Fatalf("[PostMatch] Error posting match, http status code: %d to %s -> error: %s", status, matchUrl, err)
 		return err
 	}
 
 	if status != http.StatusCreated {
-		log.Fatalf("[PostMatch] Error posting match, http status code: %s to %s", status, matchUrl)
-		return fmt.Errorf("http post match error, http status code: %s", status)
+		log.Fatalf("[PostMatch] Error posting match, http status code: %d to %s", status, matchUrl)
+		return fmt.Errorf("http post match error, http status code: %d", status)
 	}
 
 	log.Printf("[PostMatch] Match posted: %s", data)
@@ -176,13 +186,13 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 	data, status, err := s.httpPost(commandUrl, cmd.ToJson())
 
 	if err != nil {
-		log.Fatalf("[PostCommand] Error posting command, http status code: %s to %s -> error: %s", status, commandUrl, err)
+		log.Fatalf("[PostCommand] Error posting command, http status code: %d to %s -> error: %s", status, commandUrl, err)
 		return err
 	}
 
 	if status != http.StatusCreated {
-		log.Fatalf("[PostCommand] Error posting command, http status code: %s to %s", status, commandUrl)
-		return fmt.Errorf("http post command error, http status code: %s", status)
+		log.Fatalf("[PostCommand] Error posting command, http status code: %d to %s", status, commandUrl)
+		return fmt.Errorf("http post command error, http status code: %d", status)
 	}
 
 	log.Printf("[PostCommand] Command posted: %s", data)
@@ -258,7 +268,7 @@ func (s *Spy) run(last time.Time) error {
 			}
 
 			target.AddElapsed(elapsed)
-			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", target.GetName(), elapsed, target.GetElapsed(), target.GetLimit())
+			log.Printf(" > [%s] Add %.2fs -> Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
 
 			if target.CheckLimit() {
 				log.Printf(" >> [%s] Exceeded limit of %.2f seconds", target.Name, target.Limit)
@@ -345,9 +355,25 @@ func roundFloat(val float64, precision uint) float64 {
 
 func executeCommand(command string) (string, error) {
 	cmd := exec.Command("sh", "-c", command)
-	cmd.Stdout = log.Writer()
-	cmd.Stderr = log.Writer()
-	ret := cmd.Run()
 
-	return cmd.Stdout.String() + "\n" + cmd.Stderr.String(), ret
+	err := cmd.Run()
+
+	if err != nil {
+		log.Printf("Error executing command: %s -> %s", command, err)
+	}
+
+	buf, err := cmd.Output()
+
+	if err != nil {
+		log.Printf("Error to read command output: %s -> %s", command, err)
+	}
+
+	return string(buf), err
+
+}
+
+func getMD5(t *domain.TargetList) string {
+	text := t.ToLog()
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }

@@ -10,9 +10,9 @@ type Target struct {
 	User           string  `json:"user"`
 	Name           string  `json:"name"`
 	Pattern        string  `json:"pattern"`
-	Limit          int     `json:"limit"`
+	Limit          float64 `json:"limit"`
 	Elapsed        float64 `json:"elapsed,omitempty"`
-	WarningOn      int     `json:"warning_on"`
+	WarningOn      float64 `json:"warning_on"`
 	Kill           bool    `json:"kill"`
 	Source         string  `json:"source,omitempty"`
 	CheckCommand   string  `json:"check_command,omitempty"`
@@ -21,7 +21,7 @@ type Target struct {
 	rgx            *regexp.Regexp
 }
 
-func NewTarget(user string, name string, pattern string, limit int, warningOn int, kill bool, source string, checkCommand string, warningCommand string, limitCommand string) *Target {
+func NewTarget(user string, name string, pattern string, limit float64, warningOn float64, kill bool, source string, checkCommand string, warningCommand string, limitCommand string) *Target {
 	ret := &Target{
 		User:           user,
 		Name:           name,
@@ -35,13 +35,12 @@ func NewTarget(user string, name string, pattern string, limit int, warningOn in
 		LimitCommand:   limitCommand,
 	}
 
-	rgx, err := regexp.Compile(pattern)
+	var err error
+	ret.rgx, err = regexp.Compile(pattern)
 	if err != nil {
-		log.Fatalf("[domain.Target] Error compiling regex: %s", err)
-		return nil
+		log.Printf("[domain.Target] Error compiling regex: %s", err)
+		ret.rgx = nil
 	}
-
-	ret.rgx = rgx
 
 	return ret
 }
@@ -67,6 +66,11 @@ type TargetList struct {
 	Targets []*Target `json:"targets"`
 }
 
+func NewTargetList() *TargetList {
+	return &TargetList{
+		Targets: []*Target{},
+	}
+}
 func TargetListFromJson(jsonString string) (*TargetList, error) {
 	ret := &TargetList{}
 	err := json.Unmarshal([]byte(jsonString), ret)
@@ -78,7 +82,19 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 	return ret, nil
 }
 
+func (t *TargetList) ToLog() string {
+	ret, err := json.Marshal(t)
+	if err != nil {
+		log.Printf("[domain.TargetList] Error parsing json: %s", err)
+		return ""
+	}
+	return string(ret)
+}
+
 func (t *Target) Match(value string) bool {
+	if t.rgx == nil {
+		return false
+	}
 	return t.rgx.MatchString(value)
 }
 
@@ -95,7 +111,7 @@ func (t *Target) CheckLimit() bool {
 		return false
 	}
 
-	return int(t.Elapsed) > t.Limit
+	return t.Elapsed > t.Limit
 }
 
 func (t *Target) CheckWarning() bool {
@@ -103,5 +119,5 @@ func (t *Target) CheckWarning() bool {
 		return false
 	}
 
-	return int(t.Elapsed) > t.WarningOn
+	return t.Elapsed > t.WarningOn
 }

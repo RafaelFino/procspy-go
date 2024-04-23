@@ -45,6 +45,11 @@ func (t *Target) GetTargets(user string) (*domain.TargetList, error) {
 		}
 	}
 
+	for k, v := range ret.Targets {
+		v.User = user
+		ret.Targets[k] = v
+	}
+
 	if ret == nil {
 		log.Printf("[service.Target] No targets found for user: %s", user)
 		return nil, fmt.Errorf("no targets found for user: %s", user)

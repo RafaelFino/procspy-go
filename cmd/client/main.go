@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"procspy/internal/procspy/client"
 	"procspy/internal/procspy/config"
 	"syscall"
 	"time"
@@ -35,6 +36,9 @@ func main() {
 	PrintLogo()
 	fmt.Printf("\nStarting...\n")
 
+	service := client.NewSpy(cfg)
+	go service.Start()
+
 	quitChannel := make(chan os.Signal, 1)
 	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
 	<-quitChannel
@@ -49,7 +53,7 @@ func initLogger(path string) error {
 	}
 
 	writer, err := rotatelogs.New(
-		fmt.Sprintf("%s/%s.log", path, "%Y%m%d"),
+		fmt.Sprintf("%s/client-%s.log", path, "%Y%m%d"),
 		rotatelogs.WithMaxAge(24*time.Hour),
 		rotatelogs.WithRotationTime(time.Hour),
 		rotatelogs.WithRotationCount(30), //30 days

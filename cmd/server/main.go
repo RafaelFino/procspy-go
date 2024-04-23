@@ -54,7 +54,7 @@ func initLogger(path string) error {
 	}
 
 	writer, err := rotatelogs.New(
-		fmt.Sprintf("%s/%s.log", path, "%Y%m%d"),
+		fmt.Sprintf("%s/server-%s.log", path, "%Y%m%d"),
 		rotatelogs.WithMaxAge(24*time.Hour),
 		rotatelogs.WithRotationTime(time.Hour),
 		rotatelogs.WithRotationCount(30), //30 days

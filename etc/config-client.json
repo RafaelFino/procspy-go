@@ -3,5 +3,5 @@
     "log_path": "logs",  
     "debug": false,
     "interval": 5,
-    "server_url": "http://localhost:8080"
+    "server_url": "https://rgt-tools.duckdns.org/procspy"
 }

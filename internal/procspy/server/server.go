@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -64,6 +65,11 @@ func (s *Server) Start() {
 	gin.ForceConsoleColor()
 	gin.DefaultWriter = log.Writer()
 	gin.DefaultErrorWriter = log.Writer()
+	if s.config.Debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	s.router = gin.Default()
 	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
@@ -74,7 +80,7 @@ func (s *Server) Start() {
 	log.Print("Router started")
 
 	s.srv = &http.Server{
-		Addr:    s.config.APIPort,
+		Addr:    fmt.Sprintf("%s:%d", s.config.APIHost, s.config.APIPort),
 		Handler: s.router,
 	}
 
@@ -87,7 +93,7 @@ func (s *Server) Start() {
 		log.Print("Server stopped")
 	}()
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 

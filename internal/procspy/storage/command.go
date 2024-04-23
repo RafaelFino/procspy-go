@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS command_log (
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );	
 	`
-
 	if c.conn == nil {
 		log.Printf("[storage.Command] Error creating tables: db is nil")
 		return errors.New("db is nil")

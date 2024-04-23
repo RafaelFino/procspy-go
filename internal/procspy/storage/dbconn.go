@@ -22,7 +22,7 @@ func NewDbConnection(path string) *DbConnection {
 }
 
 func (d *DbConnection) makeDBPath() string {
-	return fmt.Sprintf("%s//%s.db", d.path, time.Now().Format("2006-01-02"))
+	return fmt.Sprintf("%s/%s.db", d.path, time.Now().Format("2006-01-02"))
 }
 func (d *DbConnection) GetConn() (*sql.DB, error) {
 	path := d.makeDBPath()

@@ -1,0 +1,6 @@
+{
+    "user": "pepe",
+    "log_path": "logs",  
+    "interval": 60,
+    "server_url": "http://localhost:8080"
+}

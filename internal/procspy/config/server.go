@@ -9,8 +9,10 @@ import (
 type Server struct {
 	DBPath     string            `json:"db_path"`
 	LogPath    string            `json:"log_path"`
-	APIPort    string            `json:"api_port"`
+	APIPort    int               `json:"api_port"`
+	APIHost    string            `json:"api_host"`
 	UserTarges map[string]string `json:"user_targets"`
+	Debug      bool              `json:"debug"`
 }
 
 func NewServer() *Server {

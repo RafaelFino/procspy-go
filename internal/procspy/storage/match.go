@@ -29,7 +29,6 @@ func (m *Match) Init() error {
 	create := `
 CREATE TABLE IF NOT EXISTS matches (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	when DATE DEFAULT CURRENT_DATE,
 	user TEXT NOT NULL,
 	name TEXT NOT NULL,
 	pattern TEXT NOT NULL,
@@ -104,7 +103,7 @@ FROM
 	matches
 WHERE
 	user = ?
-	and when = current_date
+	and date(when) = current_date
 GROUP BY
 	name
 ORDER BY	

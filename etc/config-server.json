@@ -1,4 +1,10 @@
 {
+    "debug": true,
     "log_path": "logs",  
-    "config_url": "http://rgt-tools.duckdns.org/api/public/dl/9ziyBW4A"
+    "db_path": "data",
+    "api_port": 8080,
+    "api_host": "localhost",
+    "user_targets": {
+        "pepe": "http://rgt-tools.duckdns.org/drive/api/public/dl/9ziyBW4A"
+    }
 }

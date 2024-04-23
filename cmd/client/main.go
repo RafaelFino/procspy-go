@@ -33,7 +33,7 @@ func main() {
 	}
 
 	PrintLogo()
-	fmt.Printf("\nStarting...")
+	fmt.Printf("\nStarting...\n")
 
 	quitChannel := make(chan os.Signal, 1)
 	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
@@ -70,7 +70,7 @@ func PrintLogo() {
 |  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______| | |      | | | |  / _ \ | '_ \  | __| 
 | |      | |    | (_) | | (__  \__ \ | |_) | | |_| |          | |____  | | | | |  __/ | | | | \ |_  
 |_|      |_|     \___/   \___| |___/ | .__/   \__, |           \_____| |_| |_|  \___| |_| |_|  \__| 
-									 | |      __/ /                                                 
-									 |_|     |___/                                                  
-	`)
+                                     | |      __/ /                                                 
+                                     |_|     |___/                                                  
+    `)
 }

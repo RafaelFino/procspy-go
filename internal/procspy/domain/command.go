@@ -31,7 +31,7 @@ func NewCommand(user string, name string, commandLine string, commandReturn stri
 func (c *Command) ToLog() string {
 	ret, err := json.Marshal(c)
 	if err != nil {
-		log.Printf("[Command] Error parsing json: %s", err)
+		log.Printf("[domain.Command] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
@@ -39,7 +39,7 @@ func (c *Command) ToLog() string {
 func (c *Command) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		log.Printf("[Command] Error parsing json: %s", err)
+		log.Printf("[domain.Command] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
@@ -49,7 +49,7 @@ func CommandFromJson(jsonString string) (*Command, error) {
 	ret := &Command{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[Command] Error parsing json: %s", err)
+		log.Printf("[domain.Command] Error parsing json: %s", err)
 		return nil, err
 	}
 	return ret, nil

@@ -11,6 +11,7 @@ type Client struct {
 	LogPath   string `json:"log_path"`
 	ServerURL string `json:"server_url"`
 	User      string `json:"user"`
+	Debug     bool   `json:"debug,omitempty"`
 }
 
 func NewConfig() *Client {

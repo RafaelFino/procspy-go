@@ -35,9 +35,20 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		return
 	}
 
-	var match *domain.Match
+	body, err := ctx.GetRawData()
 
-	if err := ctx.BindJSON(match); err != nil {
+	if err != nil {
+		log.Printf("[handler.Match] [%s] InsertMatch -> Error getting raw data: %s", user, err)
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+			"error":     "invalid json",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return
+	}
+
+	match, err := domain.MatchFromJson(string(body))
+
+	if err != nil {
 		log.Printf("[handler.Match] [%s] InsertMatch -> Error binding json: %s", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",

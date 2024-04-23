@@ -35,9 +35,20 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 		return
 	}
 
-	var cmd *domain.Command
+	body, err := ctx.GetRawData()
 
-	if err := ctx.BindJSON(cmd); err != nil {
+	if err != nil {
+		log.Printf("[handler.Command] [%s] InsertCommand -> Error getting raw data: %s", user, err)
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+			"error":     "invalid json",
+			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		})
+		return
+	}
+
+	cmd, err := domain.CommandFromJson(string(body))
+
+	if err != nil {
 		log.Printf("[handler.Command] [%s] InsertCommand -> Error binding json: %s", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",

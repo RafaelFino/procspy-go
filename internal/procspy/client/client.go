@@ -56,7 +56,9 @@ func (s *Spy) httpGet(url string) (string, int, error) {
 		return "", res.StatusCode, err
 	}
 
-	//log.Printf("[client] %d Response: %s", res.StatusCode, body)
+	if s.Config.Debug {
+		log.Printf("[HTTP-GET] %d Response: %s", res.StatusCode, body)
+	}
 
 	return string(body), res.StatusCode, nil
 }
@@ -75,7 +77,9 @@ func (s *Spy) httpPost(url string, data string) (string, int, error) {
 		return "", res.StatusCode, err
 	}
 
-	//log.Printf("[client] %d Response: %s", res.StatusCode, body)
+	if s.Config.Debug {
+		log.Printf("[HTTP-POST] %d \nRequest: %s\nResponse: %s", res.StatusCode, data, body)
+	}
 
 	return string(body), res.StatusCode, nil
 }
@@ -116,7 +120,7 @@ func (s *Spy) getTargets() ([]*domain.Target, error) {
 	newHash := getMD5(targets)
 
 	if hash != newHash {
-		log.Printf("[GetTargets] Targets changed, getting new -> %s", targets.ToLog())
+		log.Printf("[GetTargets] Targets changed -> \n%s", targets.ToLog())
 		s.targets = targets
 	}
 
@@ -173,7 +177,9 @@ func (s *Spy) postMatch(match *domain.Match) error {
 		return fmt.Errorf("http post match error, http status code: %d", status)
 	}
 
-	log.Printf("[PostMatch] Match posted: %s", data)
+	if s.Config.Debug {
+		log.Printf("[PostMatch] Match posted: %s", data)
+	}
 
 	return nil
 }
@@ -193,7 +199,9 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 		return fmt.Errorf("http post command error, http status code: %d", status)
 	}
 
-	log.Printf("[PostCommand] Command posted: %s", data)
+	if s.Config.Debug {
+		log.Printf("[PostCommand] Command posted: %s", data)
+	}
 
 	return nil
 }
@@ -226,7 +234,6 @@ func (s *Spy) run(last time.Time) error {
 	for _, target := range targets {
 		if targetElapsed, found := matches[target.Name]; found {
 			target.AddElapsed(targetElapsed)
-			log.Printf("[Spy]  > [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
 		}
 
 		match := false
@@ -246,12 +253,21 @@ func (s *Spy) run(last time.Time) error {
 		}
 
 		if len(target.CheckCommand) > 0 {
+			log.Printf("[Spy]  > [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
 			cmdLog, err := executeCommand(target.CheckCommand)
 
 			if err != nil {
 				log.Printf("[Spy]  > [%s] Error executing check command [%s]: %s -> %s", target.Name, target.CheckCommand, err, cmdLog)
 			} else {
 				log.Printf("[Spy]  > [%s] Check command [%s] -> %s", target.Name, target.CheckCommand, cmdLog)
+			}
+
+			cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
+			cmd.Source = "Check"
+			err = s.postCommand(cmd)
+
+			if err != nil {
+				log.Printf("[Spy]  >> [%s] Error inserting check command: %s", target.Name, err)
 			}
 		}
 
@@ -284,11 +300,19 @@ func (s *Spy) run(last time.Time) error {
 					} else {
 						log.Printf("[Spy]  >> [%s] Limit command [%s] -> %s", target.Name, target.LimitCommand, cmdLog)
 					}
+
+					cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
+					cmd.Source = "Limit"
+					err = s.postCommand(cmd)
+
+					if err != nil {
+						log.Printf("[Spy]  >> [%s] Error inserting limit command: %s", target.Name, err)
+					}
 				}
 
 				if target.Kill {
 					log.Printf("[Spy]  >> [%s] Killing processes: %v", target.Name, pids)
-					s.kill(pids)
+					s.kill(target.Name, pids)
 					log.Printf("[Spy]  >> [%s] %d processes terminated", target.Name, len(pids))
 				}
 			} else {
@@ -303,6 +327,14 @@ func (s *Spy) run(last time.Time) error {
 						} else {
 							log.Printf("[Spy]  >> [%s] Warning command [%s] -> %s", target.Name, target.WarningCommand, cmdLog)
 						}
+
+						cmd := domain.NewCommand(s.Config.User, target.Name, target.WarningCommand, cmdLog)
+						cmd.Source = "Warning"
+						err = s.postCommand(cmd)
+
+						if err != nil {
+							log.Printf("[Spy]  >> [%s] Error inserting warning command: %s", target.Name, err)
+						}
 					}
 				}
 			}
@@ -312,7 +344,7 @@ func (s *Spy) run(last time.Time) error {
 	return err
 }
 
-func (s *Spy) kill(pids []int) {
+func (s *Spy) kill(name string, pids []int) {
 	if len(pids) == 0 {
 		return
 	}
@@ -323,8 +355,18 @@ func (s *Spy) kill(pids []int) {
 			log.Printf("[Kill]  >> Process %d not found: %s", pid, err)
 		} else {
 			err = p.Kill()
+			msg := ""
 			if err != nil {
 				log.Printf("[Kill]  >> Warn: killing process %d: %s", pid, err)
+				msg = err.Error()
+			}
+
+			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("kill %d", pid), msg)
+			cmd.Source = "Kill"
+			err = s.postCommand(cmd)
+
+			if err != nil {
+				log.Printf("[Spy]  >> [%s] Error inserting kill command: %s", name, err)
 			}
 		}
 	}
@@ -334,7 +376,7 @@ func (s *Spy) Start() {
 	last := time.Now()
 	s.enabled = true
 
-	log.Printf("[StartSpy] Starting with config %s", s.Config.ToJson())
+	log.Printf("[StartSpy] Starting with config ->\n%s", s.Config.ToJson())
 
 	for s.enabled {
 		s.run(last)
@@ -374,11 +416,12 @@ func executeCommand(command string) (string, error) {
 	}
 
 	return string(buf), err
-
 }
 
 func getMD5(t *domain.TargetList) string {
-	text := t.ToLog()
+	text := t.Hash()
 	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
+	ret := hex.EncodeToString(hash[:])
+
+	return ret
 }

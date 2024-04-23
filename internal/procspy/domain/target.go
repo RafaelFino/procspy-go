@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 )
@@ -81,12 +82,20 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 }
 
 func (t *TargetList) ToLog() string {
-	ret, err := json.Marshal(t)
+	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
 		log.Printf("[domain.TargetList] Error parsing json: %s", err)
 		return ""
 	}
 	return string(ret)
+}
+
+func (t *TargetList) Hash() string {
+	ret := ""
+	for _, v := range t.Targets {
+		ret += fmt.Sprintf("%s %s %s %f %f %t %s %s %s %s", v.User, v.Name, v.Pattern, v.Limit, v.WarningOn, v.Kill, v.Source, v.CheckCommand, v.WarningCommand, v.LimitCommand)
+	}
+	return ret
 }
 
 func (t *Target) Match(value string) bool {

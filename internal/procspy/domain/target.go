@@ -33,13 +33,11 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 		CheckCommand:   checkCommand,
 		WarningCommand: warningCommand,
 		LimitCommand:   limitCommand,
+		rgx:            regexp.MustCompile(pattern),
 	}
 
-	var err error
-	ret.rgx, err = regexp.Compile(pattern)
-	if err != nil {
-		log.Printf("[domain.Target] Error compiling regex: %s", err)
-		ret.rgx = nil
+	if ret.rgx == nil {
+		log.Printf("[domain.Target] Error compiling regex: %s to %s:%s", pattern, user, name)
 	}
 
 	return ret
@@ -93,9 +91,12 @@ func (t *TargetList) ToLog() string {
 
 func (t *Target) Match(value string) bool {
 	if t.rgx == nil {
-		return false
+		t.rgx = regexp.MustCompile(t.Pattern)
 	}
-	return t.rgx.MatchString(value)
+
+	ret := t.rgx.MatchString(value)
+
+	return ret
 }
 
 func (t *Target) AddElapsed(elapsed float64) {

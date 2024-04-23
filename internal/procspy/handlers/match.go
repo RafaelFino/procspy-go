@@ -76,32 +76,3 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
 	})
 }
-
-func (m *Match) GetMatches(ctx *gin.Context) {
-	user, err := ValidateUser(m.users, ctx)
-
-	if err != nil {
-		log.Printf("[handler.Match] [%s] GetMatches -> Error validating user: %s", user, err)
-		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
-			"error":     "user not found",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
-		})
-		return
-	}
-
-	matches, err := m.service.GetMatches(user)
-
-	if err != nil {
-		log.Printf("[handler.Match] [%s] GetMatches -> Error getting matches: %s", user, err)
-		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
-			"error":     "internal error",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
-		})
-		return
-	}
-
-	ctx.IndentedJSON(http.StatusOK, gin.H{
-		"matches":   matches,
-		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
-	})
-}

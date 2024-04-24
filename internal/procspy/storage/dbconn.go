@@ -63,6 +63,8 @@ func (d *DbConnection) Close() error {
 		return err
 	}
 
+	d.conn = nil
+
 	log.Printf("[DbConnection] Connection closed for %s", d.last)
 
 	return nil

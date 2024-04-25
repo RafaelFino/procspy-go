@@ -36,6 +36,36 @@ CREATE TABLE IF NOT EXISTS matches (
 	elapsed int DEFAULT 60,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP	
 );	
+
+CREATE TABLE IF NOT EXISTS matches_old (
+	id INTEGER,
+	user TEXT NOT NULL,
+	name TEXT NOT NULL,
+	pattern TEXT NOT NULL,
+	match TEXT NOT NULL,
+	elapsed int DEFAULT 60,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO matches_old
+SELECT
+	id,
+	user,
+	name,
+	pattern,
+	match,
+	elapsed,
+	created_at
+FROM
+	matches
+WHERE
+	created_at < date('now', '-1 day')
+ORDER BY 
+	created_at DESC;
+
+DELETE FROM matches
+WHERE
+	created_at < date('now', '-1 day');
 `
 	if m.conn == nil {
 		log.Printf("[storage.Match] Error creating tables: db is nil")

@@ -37,6 +37,38 @@ CREATE TABLE IF NOT EXISTS command_log (
 	command_log TEXT DEFAULT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );	
+
+CREATE TABLE IF NOT EXISTS command_log_old (
+	id INTEGER,
+	user TEXT NOT NULL,
+	name TEXT NOT NULL,
+	command_line TEXT NOT NULL,
+	command_return TEXT DEFAULT NULL,
+	source TEXT NOT NULL,
+	command_log TEXT DEFAULT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO command_log_old
+SELECT
+	id,
+	user,
+	name,
+	command_line,
+	command_return,
+	source,
+	command_log,
+	created_at
+FROM	
+	command_log
+WHERE
+	created_at < datetime('now', '-1 day')
+ORDER BY
+	created_at DESC;
+
+DELETE FROM command_log
+WHERE
+	created_at < datetime('now', '-1 day');
 	`
 	if c.conn == nil {
 		log.Printf("[storage.Command] Error creating tables: db is nil")

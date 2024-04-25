@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -12,7 +11,6 @@ import (
 type DbConnection struct {
 	conn *sql.DB
 	path string
-	last string
 }
 
 func NewDbConnection(path string) *DbConnection {
@@ -22,19 +20,10 @@ func NewDbConnection(path string) *DbConnection {
 }
 
 func (d *DbConnection) makeDBPath() string {
-	return fmt.Sprintf("%s/%s.db", d.path, time.Now().Format("2006-01-02"))
+	return fmt.Sprintf("%s/procpsy.db", d.path)
 }
 func (d *DbConnection) GetConn() (*sql.DB, error) {
 	path := d.makeDBPath()
-
-	if d.last != path {
-		err := d.Close()
-
-		if err != nil {
-			log.Printf("[DbConnection] Error closing connection: %s", err)
-			return nil, err
-		}
-	}
 
 	if d.conn == nil {
 		log.Printf("[DbConnection] Opening connection to %s", path)
@@ -44,7 +33,6 @@ func (d *DbConnection) GetConn() (*sql.DB, error) {
 			return nil, err
 		}
 		d.conn = conn
-		d.last = path
 	}
 
 	return d.conn, nil
@@ -65,7 +53,7 @@ func (d *DbConnection) Close() error {
 
 	d.conn = nil
 
-	log.Printf("[DbConnection] Connection closed for %s", d.last)
+	log.Printf("[DbConnection] Connection closed for %s", d.makeDBPath())
 
 	return nil
 }

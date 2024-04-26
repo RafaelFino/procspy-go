@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"procspy/internal/procspy/domain"
@@ -24,13 +23,15 @@ func NewMatch(matchService *service.Match, usersService *service.Users) *Match {
 }
 
 func (m *Match) InsertMatch(ctx *gin.Context) {
+	start := time.Now()
 	user, err := ValidateUser(m.users, ctx)
 
 	if err != nil {
 		log.Printf("[handler.Match] [%s] InsertMatch -> Error validating user: %s", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -41,7 +42,8 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		log.Printf("[handler.Match] [%s] InsertMatch -> Error getting raw data: %s", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -52,7 +54,8 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		log.Printf("[handler.Match] [%s] InsertMatch -> Error binding json: %s", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 
 		return
@@ -64,7 +67,8 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		log.Printf("[handler.Match] [%s] InsertMatch -> Error inserting match: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -73,6 +77,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 
 	ctx.IndentedJSON(http.StatusCreated, gin.H{
 		"message":   "match inserted",
-		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		"elapsed":   time.Since(start).Milliseconds(),
+		"timestamp": time.Now().Format(time.RFC3339),
 	})
 }

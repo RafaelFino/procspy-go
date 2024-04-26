@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"procspy/internal/procspy/service"
@@ -25,13 +24,15 @@ func NewTarget(targetService *service.Target, usersService *service.Users, match
 }
 
 func (t *Target) GetTargets(ctx *gin.Context) {
+	start := time.Now()
 	user, err := ValidateUser(t.users, ctx)
 
 	if err != nil {
 		log.Printf("[handler.Target] [%s] GetTargets -> Error validating user: %s", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -42,7 +43,8 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 		log.Printf("[handler.Target] [%s] GetTargets -> Error getting targets: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -53,7 +55,8 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 		log.Printf("[handler.Target] [%s] GetTargets -> Error getting matches: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
-			"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
 		})
 		return
 	}
@@ -66,6 +69,7 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 
 	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"targets":   targets.Targets,
-		"timestamp": fmt.Sprintf("%d", time.Now().Unix()),
+		"elapsed":   time.Since(start).Milliseconds(),
+		"timestamp": time.Now().Format(time.RFC3339),
 	})
 }

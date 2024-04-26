@@ -17,7 +17,7 @@ if [ "$par" == "all" ]; then
         do
             for d in cmd/* ; do
                 echo "[$os $arch] Building ${d##*/} -> ./bin/$os-$arch/${d##*/}"
-                GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/${d##*/} $d/main.go
+                GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -ldflags="-s -w" -o bin/$os-$arch/${d##*/} $d/main.go
             done
         done
     done

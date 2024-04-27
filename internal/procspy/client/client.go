@@ -22,6 +22,8 @@ type Spy struct {
 	enabled    bool
 	currentDay int
 	targets    *domain.TargetList
+	commandBuf chan *domain.Command
+	matchBuf   chan *domain.Match
 }
 
 func NewSpy(config *config.Client) *Spy {
@@ -30,6 +32,8 @@ func NewSpy(config *config.Client) *Spy {
 		enabled:    false,
 		currentDay: time.Now().Day(),
 		targets:    domain.NewTargetList(),
+		commandBuf: make(chan *domain.Command, 1000),
+		matchBuf:   make(chan *domain.Match, 1000),
 	}
 	/*
 		s.router.GET("/targets/:user", s.targetHandler.GetTargets)
@@ -82,44 +86,49 @@ func (s *Spy) httpPost(url string, data string) (string, int, error) {
 	return string(body), res.StatusCode, nil
 }
 
-func (s *Spy) getTargets() ([]*domain.Target, error) {
+func (s *Spy) updateTargets() {
+	if s.targets == nil {
+		s.targets = domain.NewTargetList()
+	}
+
 	targetUrl := fmt.Sprintf("%s/targets/%s", s.Config.ServerURL, s.Config.User)
 
 	data, status, err := s.httpGet(targetUrl)
 
 	if err != nil {
-		log.Printf("[GetTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
-		return nil, err
+		log.Printf("[UpdateTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
+		return
 	}
 
 	if status != http.StatusOK {
-		log.Printf("[GetTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
-		return nil, fmt.Errorf("http get targets error, http status code: %d", status)
+		log.Printf("[UpdateTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
+		return
 	}
 
 	targets, err := domain.TargetListFromJson(data)
 
 	if err != nil {
-		log.Printf("[GetTargets] Error getting targets: %s -> bad format", err)
-		return nil, err
+		log.Printf("[UpdateTargets] Error getting targets: %s -> bad format", err)
+		return
 	}
 
 	if targets == nil {
-		log.Printf("[GetTargets] Error getting targets: nil")
-		return nil, fmt.Errorf("nil targets")
+		log.Printf("[UpdateTargets] Error getting targets: nil")
+		return
 	}
 
 	if len(targets.Targets) == 0 {
-		log.Printf("[GetTargets] No targets found")
-		return targets.Targets, nil
+		log.Printf("[UpdateTargets] No targets found")
 	}
 
 	s.targets = targets
-
-	return s.targets.Targets, nil
 }
 
 func (s *Spy) postMatch(match *domain.Match) error {
+	if match == nil {
+		return fmt.Errorf("match is nil")
+	}
+
 	matchUrl := fmt.Sprintf("%s/match/%s", s.Config.ServerURL, s.Config.User)
 
 	data, status, err := s.httpPost(matchUrl, match.ToJson())
@@ -135,13 +144,17 @@ func (s *Spy) postMatch(match *domain.Match) error {
 	}
 
 	if s.Config.Debug {
-		log.Printf("[PostMatch] Match posted: %s", data)
+		log.Printf("[PostMatch] Match POST return: %s\n from \n%s", data, match.ToJson())
 	}
 
 	return nil
 }
 
 func (s *Spy) postCommand(cmd *domain.Command) error {
+	if cmd == nil {
+		return fmt.Errorf("command is nil")
+	}
+
 	commandUrl := fmt.Sprintf("%s/command/%s", s.Config.ServerURL, s.Config.User)
 
 	data, status, err := s.httpPost(commandUrl, cmd.ToJson())
@@ -157,24 +170,76 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 	}
 
 	if s.Config.Debug {
-		log.Printf("[PostCommand] Command posted: %s", data)
+		log.Printf("[PostCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
 	}
 
 	return nil
 }
 
+func (s *Spy) consumeBuffers() {
+	if s.matchBuf == nil {
+		log.Printf("[Spy] Match buffer is nil")
+		s.matchBuf = make(chan *domain.Match, 1000)
+	}
+
+	if s.commandBuf == nil {
+		log.Printf("[Spy] Command buffer is nil")
+		s.commandBuf = make(chan *domain.Command, 1000)
+	}
+
+	go func() {
+		//Buffer
+		matchDlq := make(chan *domain.Match, len(s.matchBuf))
+		for len(s.matchBuf) > 0 {
+			if s.Config.Debug {
+				log.Printf("[Spy] %d matches in buffer", len(s.matchBuf))
+			}
+
+			match := <-s.matchBuf
+			err := s.postMatch(match)
+			if err != nil {
+				log.Printf("[Spy] Error posting match: %s, waiting for next process", err)
+				matchDlq <- match
+			}
+		}
+
+		cmdDlq := make(chan *domain.Command, len(s.commandBuf))
+		for len(s.commandBuf) > 0 {
+			if s.Config.Debug {
+				log.Printf("[Spy] %d commands in buffer", len(s.commandBuf))
+			}
+
+			cmd := <-s.commandBuf
+			err := s.postCommand(cmd)
+			if err != nil {
+				log.Printf("[Spy] Error posting command: %s, waiting for next process", err)
+				cmdDlq <- cmd
+			}
+		}
+
+		//DLQ
+		for len(matchDlq) > 0 {
+			match := <-matchDlq
+			log.Printf("[Spy] Add match to post dlq: %s", match.ToJson())
+			s.matchBuf <- match
+		}
+
+		for len(cmdDlq) > 0 {
+			cmd := <-cmdDlq
+			log.Printf("[Spy] Add command to post dlq: %s", cmd.ToJson())
+			s.commandBuf <- cmd
+		}
+	}()
+}
+
 func (s *Spy) run(last time.Time) error {
-	log.Printf("[Spy] Running...")
-	defer log.Printf("[Spy] Finished!")
+	log.Printf("[Spy] Starting...")
+	defer log.Printf("[Spy] Finished")
 
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 
-	targets, err := s.getTargets()
-
-	if err != nil {
-		log.Printf("[Spy] Error getting targets: %s", err)
-		return err
-	}
+	defer s.consumeBuffers()
+	s.updateTargets()
 
 	processes, err := ps.Processes()
 	if err != nil {
@@ -182,7 +247,7 @@ func (s *Spy) run(last time.Time) error {
 		return err
 	}
 
-	for _, target := range targets {
+	for _, target := range s.targets.Targets {
 		match := false
 		pids := make([]int, 0)
 		names := make(map[string]struct{})
@@ -210,11 +275,7 @@ func (s *Spy) run(last time.Time) error {
 
 			cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
 			cmd.Source = "Check"
-			err = s.postCommand(cmd)
-
-			if err != nil {
-				log.Printf("[Spy]  >> [%s] Error inserting check command: %s", target.Name, err)
-			}
+			s.commandBuf <- cmd
 		}
 
 		if match {
@@ -226,11 +287,7 @@ func (s *Spy) run(last time.Time) error {
 			}
 
 			log.Printf("[Spy]  > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
-			err = s.postMatch(domain.NewMatch(s.Config.User, target.Name, target.Pattern, strings.Join(matches, " / "), elapsed))
-
-			if err != nil {
-				log.Printf("[Spy]  [%s] Error inserting process: %s", target.Name, err)
-			}
+			s.matchBuf <- domain.NewMatch(s.Config.User, target.Name, target.Pattern, strings.Join(matches, " / "), elapsed)
 
 			target.AddElapsed(elapsed)
 			log.Printf("[Spy]  > [%s] Add %.2fs -> Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
@@ -249,11 +306,7 @@ func (s *Spy) run(last time.Time) error {
 
 					cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
 					cmd.Source = "Limit"
-					err = s.postCommand(cmd)
-
-					if err != nil {
-						log.Printf("[Spy]  >> [%s] Error inserting limit command: %s", target.Name, err)
-					}
+					s.commandBuf <- cmd
 				}
 
 				if target.Kill {
@@ -276,11 +329,7 @@ func (s *Spy) run(last time.Time) error {
 
 						cmd := domain.NewCommand(s.Config.User, target.Name, target.WarningCommand, cmdLog)
 						cmd.Source = "Warning"
-						err = s.postCommand(cmd)
-
-						if err != nil {
-							log.Printf("[Spy]  >> [%s] Error inserting warning command: %s", target.Name, err)
-						}
+						s.commandBuf <- cmd
 					}
 				}
 			}
@@ -309,11 +358,7 @@ func (s *Spy) kill(name string, pids []int) {
 
 			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("kill %d", pid), msg)
 			cmd.Source = "Kill"
-			err = s.postCommand(cmd)
-
-			if err != nil {
-				log.Printf("[Spy]  >> [%s] Error inserting kill command: %s", name, err)
-			}
+			s.commandBuf <- cmd
 		}
 	}
 }

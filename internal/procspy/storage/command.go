@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS command_log (
 	command_return TEXT DEFAULT NULL,
 	source TEXT NOT NULL,
 	command_log TEXT DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	created_at TIMESTAMP DEFAULT datetime('now', 'localtime')
 );	
 
 CREATE TABLE IF NOT EXISTS command_log_old (
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS command_log_old (
 	command_return TEXT DEFAULT NULL,
 	source TEXT NOT NULL,
 	command_log TEXT DEFAULT NULL,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	created_at TIMESTAMP DEFAULT datetime('now', 'localtime')
 );
 
 INSERT INTO command_log_old

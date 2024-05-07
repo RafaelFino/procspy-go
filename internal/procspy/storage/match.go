@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS matches (
 	pattern TEXT NOT NULL,
 	match TEXT NOT NULL,
 	elapsed int DEFAULT 60,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP	
+	created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
 );	
 
 CREATE TABLE IF NOT EXISTS matches_old (
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS matches_old (
 	pattern TEXT NOT NULL,
 	match TEXT NOT NULL,
 	elapsed int DEFAULT 60,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
 );
 
 INSERT INTO matches_old

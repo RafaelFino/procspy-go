@@ -59,13 +59,13 @@ SELECT
 FROM
 	matches
 WHERE
-	date(created_at) <= date('now', '-1 day')
+	date(created_at) <= date(date('now', 'localtime'), '-1 day')
 ORDER BY 
 	created_at DESC;
 
 DELETE FROM matches
 WHERE
-	created_at < date('now', '-1 day');
+	created_at < date(date('now', 'localtime'), '-1 day');
 `
 	if m.conn == nil {
 		log.Printf("[storage.Match] Error creating tables: db is nil")
@@ -132,7 +132,7 @@ FROM
 	matches
 WHERE
 	user = ?
-	and date(created_at) >= date(current_date)
+	and date(created_at) >= date('now', 'localtime')
 GROUP BY
 	name
 ORDER BY	

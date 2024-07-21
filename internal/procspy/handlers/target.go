@@ -49,10 +49,10 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 		return
 	}
 
-	matches, err := t.matches.GetMatches(user)
+	matches, err := t.matches.GetMatchesInfo(user)
 
 	if err != nil {
-		log.Printf("[handler.Target] [%s] GetTargets -> Error getting matches: %s", user, err)
+		log.Printf("[handler.Target] [%s] GetTargets -> Error getting matches info: %s", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -62,8 +62,8 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 	}
 
 	for _, target := range targets.Targets {
-		if elapsed, ok := matches[target.Name]; ok {
-			target.AddElapsed(elapsed)
+		if info, ok := matches[target.Name]; ok {
+			target.AddMatchInfo(info)
 		}
 	}
 

@@ -46,3 +46,13 @@ func (m *Match) GetMatches(user string) (map[string]float64, error) {
 
 	return data, err
 }
+
+func (m *Match) GetMatchesInfo(user string) (map[string]*domain.MatchInfo, error) {
+	data, err := m.storage.GetMatchesInfo(user)
+
+	if err != nil {
+		log.Printf("[service.Match] Error getting matches info: %s", err)
+	}
+
+	return data, err
+}

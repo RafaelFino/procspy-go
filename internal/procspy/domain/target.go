@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"regexp"
 )
 
@@ -12,7 +13,12 @@ type Target struct {
 	Name           string  `json:"name"`
 	Pattern        string  `json:"pattern"`
 	Limit          float64 `json:"limit"`
+	LimitHours     float64 `json:"limit_hours,omitempty"`
+	Ocurrences     int     `json:"ocurrences,omitempty"`
 	Elapsed        float64 `json:"elapsed,omitempty"`
+	ElapsedHours   float64 `json:"elapsed_hours,omitempty"`
+	FirstMatch     string  `json:"first_match,omitempty"`
+	LastMatch      string  `json:"last_match,omitempty"`
 	WarningOn      float64 `json:"warning_on"`
 	Kill           bool    `json:"kill"`
 	Source         string  `json:"source,omitempty"`
@@ -41,7 +47,14 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 		log.Printf("[domain.Target] Error compiling regex: %s to %s:%s", pattern, user, name)
 	}
 
+	ret.SetReportValues()
+
 	return ret
+}
+
+func (t *Target) SetReportValues() {
+	t.ElapsedHours = math.Round(t.Elapsed*100/3600) / 100
+	t.LimitHours = math.Round(t.Limit*100/3600) / 100
 }
 
 func (t *Target) ToLog() string {
@@ -108,12 +121,27 @@ func (t *Target) Match(value string) bool {
 	return ret
 }
 
+func (t *Target) AddMatchInfo(info *MatchInfo) {
+	t.Elapsed += info.Elapsed
+	t.FirstMatch = info.FirstMatch
+	t.LastMatch = info.LastMatch
+	t.Ocurrences = info.Ocurrences
+	t.SetReportValues()
+}
+
 func (t *Target) AddElapsed(elapsed float64) {
 	t.Elapsed += elapsed
+	t.SetReportValues()
+}
+
+func (t *Target) SetElapsed(elapsed float64) {
+	t.Elapsed = elapsed
+	t.SetReportValues()
 }
 
 func (t *Target) ResetElapsed() {
 	t.Elapsed = 0
+	t.SetReportValues()
 }
 
 func (t *Target) CheckLimit() bool {

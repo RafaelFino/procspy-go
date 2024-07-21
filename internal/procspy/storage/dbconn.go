@@ -20,7 +20,7 @@ func NewDbConnection(path string) *DbConnection {
 }
 
 func (d *DbConnection) makeDBPath() string {
-	return fmt.Sprintf("%s/procpsy.db", d.path)
+	return fmt.Sprintf("%s/procspy.db", d.path)
 }
 func (d *DbConnection) GetConn() (*sql.DB, error) {
 	path := d.makeDBPath()

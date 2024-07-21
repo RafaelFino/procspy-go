@@ -127,7 +127,9 @@ func (m *Match) GetMatches(user string) (map[string]float64, error) {
 	query := `
 SELECT
 	name,
-	sum(elapsed) elapsed
+	sum(elapsed) elapsed,
+    min(created_at) first_elapsed,
+    max(created_at) last_elapsed	
 FROM
 	matches
 WHERE
@@ -167,6 +169,68 @@ ORDER BY
 		}
 
 		ret[name] = elapsed
+	}
+
+	return ret, nil
+}
+
+func (m *Match) GetMatchesInfo(user string) (map[string]*domain.MatchInfo, error) {
+	query := `
+SELECT
+	name,
+	sum(elapsed) elapsed,
+    min(created_at) first,
+    max(created_at) last,
+	count(*) ocurrences
+FROM
+	matches
+WHERE
+	user = ?
+	and date(created_at) >= date('now', 'localtime')
+GROUP BY
+	name
+ORDER BY	
+	name DESC;
+`
+	conn, err := m.conn.GetConn()
+
+	if err != nil {
+		log.Printf("[storage.Match] Error getting connection: %s", err)
+		return nil, err
+	}
+
+	rows, err := conn.Query(query, user)
+
+	if err != nil {
+		log.Printf("[storage.Match] Error getting matches: %s", err)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	ret := make(map[string]*domain.MatchInfo)
+
+	for rows.Next() {
+		var name string
+
+		var elapsed float64
+		var first string
+		var last string
+		var ocurrences int
+
+		err = rows.Scan(&name, &elapsed, &first, &last, &ocurrences)
+
+		if err != nil {
+			log.Printf("[storage.Match] Error scanning matches: %s", err)
+			return nil, err
+		}
+
+		ret[name] = &domain.MatchInfo{
+			Elapsed:    elapsed,
+			FirstMatch: first,
+			LastMatch:  last,
+			Ocurrences: ocurrences,
+		}
 	}
 
 	return ret, nil

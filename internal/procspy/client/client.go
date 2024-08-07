@@ -364,7 +364,7 @@ func (s *Spy) kill(name string, pids []int) {
 }
 
 func (s *Spy) Start() {
-	last := time.Now()
+	last := time.Now().Add(-time.Duration(s.Config.Interval) * time.Second)
 	s.enabled = true
 
 	log.Printf("[StartSpy] Starting with config ->\n%s", s.Config.ToJson())

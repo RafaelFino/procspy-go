@@ -10,6 +10,8 @@ type Match struct {
 	storage *storage.Match
 }
 
+var MATCH_MAX_ELAPSED float64 = 120
+
 func NewMatch(conn *storage.DbConnection) *Match {
 	ret := &Match{
 		storage: storage.NewMatch(conn),
@@ -34,6 +36,12 @@ func (m *Match) Close() error {
 
 func (m *Match) InsertMatch(match *domain.Match) error {
 	log.Printf("[service.Match] Inserting match: %s", match.Pattern)
+
+	if match.Elapsed > MATCH_MAX_ELAPSED {
+		log.Printf("[service.Match] Match elapsed time too high: %f", match.Elapsed)
+		match.Elapsed = MATCH_MAX_ELAPSED
+	}
+
 	return m.storage.InsertMatch(match)
 }
 

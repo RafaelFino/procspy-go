@@ -6,7 +6,10 @@ import (
 	"log"
 	"math"
 	"regexp"
+	"time"
 )
+
+const DEFAULT_WEEKDAY_FACTOR = 0.5
 
 type Target struct {
 	User           string  `json:"user"`
@@ -25,6 +28,7 @@ type Target struct {
 	CheckCommand   string  `json:"check_command,omitempty"`
 	WarningCommand string  `json:"warning_command,omitempty"`
 	LimitCommand   string  `json:"limit_command,omitempty"`
+	WeekdayFactor  float64 `json:"weekday_factor,omitempty"`
 	rgx            *regexp.Regexp
 }
 
@@ -40,6 +44,7 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 		CheckCommand:   checkCommand,
 		WarningCommand: warningCommand,
 		LimitCommand:   limitCommand,
+		WeekdayFactor:  DEFAULT_WEEKDAY_FACTOR,
 		rgx:            regexp.MustCompile(pattern),
 	}
 
@@ -54,7 +59,7 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 
 func (t *Target) SetReportValues() {
 	t.ElapsedHours = math.Round(t.Elapsed*100/3600) / 100
-	t.LimitHours = math.Round(t.Limit*100/3600) / 100
+	t.LimitHours = math.Round(t.getLimit()*100/3600) / 100
 }
 
 func (t *Target) ToLog() string {
@@ -106,7 +111,7 @@ func (t *TargetList) ToLog() string {
 func (t *TargetList) Hash() string {
 	ret := ""
 	for _, v := range t.Targets {
-		ret += fmt.Sprintf("%s %s %s %f %f %t %s %s %s %s", v.User, v.Name, v.Pattern, v.Limit, v.WarningOn, v.Kill, v.Source, v.CheckCommand, v.WarningCommand, v.LimitCommand)
+		ret += fmt.Sprintf("%s %s %s %f %f %t %s %s %s %s", v.User, v.Name, v.Pattern, v.getLimit(), v.getWarningOn(), v.Kill, v.Source, v.CheckCommand, v.WarningCommand, v.LimitCommand)
 	}
 	return ret
 }
@@ -149,7 +154,7 @@ func (t *Target) CheckLimit() bool {
 		return false
 	}
 
-	return t.Elapsed > t.Limit
+	return t.Elapsed > t.getLimit()
 }
 
 func (t *Target) CheckWarning() bool {
@@ -157,5 +162,27 @@ func (t *Target) CheckWarning() bool {
 		return false
 	}
 
-	return t.Elapsed > t.WarningOn
+	return t.Elapsed > t.getWarningOn()
+}
+
+func (t *Target) applyFactor(limit float64) float64 {
+	today := int(time.Now().Weekday())
+
+	if t.WeekdayFactor <= 0 {
+		t.WeekdayFactor = DEFAULT_WEEKDAY_FACTOR
+	}
+
+	if today == 0 || today == 6 {
+		return limit
+	}
+
+	return limit * t.WeekdayFactor
+}
+
+func (t *Target) getLimit() float64 {
+	return t.applyFactor(t.Limit)
+}
+
+func (t *Target) getWarningOn() float64 {
+	return t.applyFactor(t.WarningOn)
 }

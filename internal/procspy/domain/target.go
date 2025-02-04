@@ -12,24 +12,26 @@ import (
 const DEFAULT_WEEKDAY_FACTOR = 0.5
 
 type Target struct {
-	User           string  `json:"user"`
-	Name           string  `json:"name"`
-	Pattern        string  `json:"pattern"`
-	Limit          float64 `json:"limit"`
-	LimitHours     float64 `json:"limit_hours,omitempty"`
-	Ocurrences     int     `json:"ocurrences,omitempty"`
-	Elapsed        float64 `json:"elapsed,omitempty"`
-	ElapsedHours   float64 `json:"elapsed_hours,omitempty"`
-	FirstMatch     string  `json:"first_match,omitempty"`
-	LastMatch      string  `json:"last_match,omitempty"`
-	WarningOn      float64 `json:"warning_on"`
-	Kill           bool    `json:"kill"`
-	Source         string  `json:"source,omitempty"`
-	CheckCommand   string  `json:"check_command,omitempty"`
-	WarningCommand string  `json:"warning_command,omitempty"`
-	LimitCommand   string  `json:"limit_command,omitempty"`
-	WeekdayFactor  float64 `json:"weekday_factor,omitempty"`
-	rgx            *regexp.Regexp
+	User               string  `json:"user"`
+	Name               string  `json:"name"`
+	Pattern            string  `json:"pattern"`
+	Limit              float64 `json:"limit"`
+	LimitHours         float64 `json:"limit_hours,omitempty"`
+	LimitWeekdays      float64 `json:"limit_weekdays,omitempty"`
+	LimitHoursWeekDays float64 `json:"limit_hours_weekdays,omitempty"`
+	Ocurrences         int     `json:"ocurrences,omitempty"`
+	Elapsed            float64 `json:"elapsed,omitempty"`
+	ElapsedHours       float64 `json:"elapsed_hours,omitempty"`
+	FirstMatch         string  `json:"first_match,omitempty"`
+	LastMatch          string  `json:"last_match,omitempty"`
+	WarningOn          float64 `json:"warning_on"`
+	Kill               bool    `json:"kill"`
+	Source             string  `json:"source,omitempty"`
+	CheckCommand       string  `json:"check_command,omitempty"`
+	WarningCommand     string  `json:"warning_command,omitempty"`
+	LimitCommand       string  `json:"limit_command,omitempty"`
+	WeekdayFactor      float64 `json:"weekday_factor,omitempty"`
+	rgx                *regexp.Regexp
 }
 
 func NewTarget(user string, name string, pattern string, limit float64, warningOn float64, kill bool, source string, checkCommand string, warningCommand string, limitCommand string) *Target {
@@ -59,7 +61,10 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 
 func (t *Target) SetReportValues() {
 	t.ElapsedHours = math.Round(t.Elapsed*100/3600) / 100
-	t.LimitHours = math.Round(t.getLimit()*100/3600) / 100
+	t.LimitHours = math.Round(t.Limit*100/3600) / 100
+
+	t.LimitWeekdays = t.Limit * t.WeekdayFactor
+	t.LimitHoursWeekDays = math.Round(t.Limit*t.WeekdayFactor*100/3600) / 100
 }
 
 func (t *Target) ToLog() string {
@@ -94,6 +99,10 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 	if err != nil {
 		log.Printf("[domain.Target] Error parsing json: %s", err)
 		return nil, err
+	}
+
+	for _, v := range ret.Targets {
+		v.SetReportValues()
 	}
 
 	return ret, nil
@@ -176,7 +185,7 @@ func (t *Target) applyFactor(limit float64) float64 {
 		return limit
 	}
 
-	return limit * t.WeekdayFactor
+	return t.LimitWeekdays
 }
 
 func (t *Target) getLimit() float64 {

@@ -60,10 +60,13 @@ func NewTarget(user string, name string, pattern string, limit float64, warningO
 }
 
 func (t *Target) SetReportValues() {
+	if t.WeekdayFactor <= 0 {
+		t.WeekdayFactor = DEFAULT_WEEKDAY_FACTOR
+	}
+
 	t.ElapsedHours = math.Round(t.Elapsed*100/3600) / 100
 	t.LimitHours = math.Round(t.Limit*100/3600) / 100
-
-	t.LimitWeekdays = t.Limit * t.WeekdayFactor
+	t.LimitWeekdays = math.Round(t.Limit * t.WeekdayFactor)
 	t.LimitHoursWeekDays = math.Round(t.Limit*t.WeekdayFactor*100/3600) / 100
 }
 
@@ -93,6 +96,7 @@ func NewTargetList() *TargetList {
 		Targets: []*Target{},
 	}
 }
+
 func TargetListFromJson(jsonString string) (*TargetList, error) {
 	ret := &TargetList{}
 	err := json.Unmarshal([]byte(jsonString), ret)
@@ -109,6 +113,10 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 }
 
 func (t *TargetList) ToLog() string {
+	for _, v := range t.Targets {
+		v.SetReportValues()
+	}
+
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
 		log.Printf("[domain.TargetList] Error parsing json: %s", err)

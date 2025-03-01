@@ -4,67 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"regexp"
 	"time"
 )
 
-const DEFAULT_WEEKDAY_FACTOR = 0.5
-const DEFAULT_WEEKEND_FACTOR = 1.0
+const DEFAULT_WEEKDAY_LIMIT = 0.5
+const DEFAULT_WEEKEND_LIMIT = 1.0
+const DEFAULT_BASE_LIMIT = 60 * 60
+const DEFAULT_WARNING_ON = 0.95
 
 type Target struct {
-	User              string          `json:"user"`
-	Name              string          `json:"name"`
-	Pattern           string          `json:"pattern"`
-	Limit             float64         `json:"limit"`
-	LimitHours        float64         `json:"limit_hours,omitempty"`
-	LimitCurrent      float64         `json:"limit_current,omitempty"`
-	LimitHoursCurrent float64         `json:"limit_hours_current,omitempty"`
-	Ocurrences        int             `json:"ocurrences,omitempty"`
-	Elapsed           float64         `json:"elapsed,omitempty"`
-	ElapsedHours      float64         `json:"elapsed_hours,omitempty"`
-	FirstMatch        string          `json:"first_match,omitempty"`
-	LastMatch         string          `json:"last_match,omitempty"`
-	WarningOn         float64         `json:"warning_on"`
-	Kill              bool            `json:"kill"`
-	Source            string          `json:"source,omitempty"`
-	CheckCommand      string          `json:"check_command,omitempty"`
-	WarningCommand    string          `json:"warning_command,omitempty"`
-	LimitCommand      string          `json:"limit_command,omitempty"`
-	WeekdayFactors    map[int]float64 `json:"weekday_factors,omitempty"`
-	rgx               *regexp.Regexp
+	User           string          `json:"user"`
+	Name           string          `json:"name"`
+	Pattern        string          `json:"pattern"`
+	Source         string          `json:"source,omitempty"`
+	Limit          float64         `json:"limit"`
+	Elapsed        float64         `json:"elapsed,omitempty"`
+	Remaining      float64         `json:"remaining"`
+	Ocurrences     int             `json:"ocurrences,omitempty"`
+	FirstMatch     string          `json:"first_match,omitempty"`
+	LastMatch      string          `json:"last_match,omitempty"`
+	Kill           bool            `json:"kill"`
+	LimitCommand   string          `json:"limit_command,omitempty"`
+	CheckCommand   string          `json:"check_command,omitempty"`
+	WarningCommand string          `json:"warning_command,omitempty"`
+	WarningOn      float64         `json:"warning_on,omitempty"`
+	Weekdays       map[int]float64 `json:"weekdays,omitempty"`
+	rgx            *regexp.Regexp
 }
 
-func NewTarget(user string, name string, pattern string, limit float64, warningOn float64, kill bool, source string, checkCommand string, warningCommand string, limitCommand string) *Target {
-	ret := &Target{
-		User:           user,
-		Name:           name,
-		Pattern:        pattern,
-		Limit:          limit,
-		WarningOn:      warningOn,
-		Kill:           kill,
-		Source:         source,
-		CheckCommand:   checkCommand,
-		WarningCommand: warningCommand,
-		LimitCommand:   limitCommand,
-		WeekdayFactors: map[int]float64{},
-		rgx:            regexp.MustCompile(pattern),
+func (t *Target) setWeekdays() {
+	if t.Weekdays == nil {
+		t.Weekdays = map[int]float64{}
 	}
 
-	if ret.rgx == nil {
-		log.Printf("[domain.Target] Error compiling regex: %s to %s:%s", pattern, user, name)
+	for i := 0; i < 7; i++ {
+		if _, found := t.Weekdays[i]; !found {
+			if i == 0 || i == 6 {
+				t.Weekdays[i] = DEFAULT_WEEKEND_LIMIT
+			} else {
+				t.Weekdays[i] = DEFAULT_WEEKDAY_LIMIT
+			}
+		}
 	}
-
-	ret.SetReportValues()
-
-	return ret
-}
-
-func (t *Target) SetReportValues() {
-	t.ElapsedHours = math.Round(t.Elapsed*100/3600) / 100
-	t.LimitHours = math.Round(t.Limit*100/3600) / 100
-	t.LimitCurrent = math.Round(t.applyFactor(t.Limit))
-	t.LimitHoursCurrent = math.Round(t.applyFactor(t.Limit)*100/3600) / 100
 }
 
 func (t *Target) ToLog() string {
@@ -103,17 +85,14 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 	}
 
 	for _, v := range ret.Targets {
-		v.SetReportValues()
+		v.setWeekdays()
+		v.getLimit()
 	}
 
 	return ret, nil
 }
 
 func (t *TargetList) ToLog() string {
-	for _, v := range t.Targets {
-		v.SetReportValues()
-	}
-
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
 		log.Printf("[domain.TargetList] Error parsing json: %s", err)
@@ -145,72 +124,56 @@ func (t *Target) AddMatchInfo(info *MatchInfo) {
 	t.FirstMatch = info.FirstMatch
 	t.LastMatch = info.LastMatch
 	t.Ocurrences = info.Ocurrences
-	t.SetReportValues()
+	t.Remaining = t.getLimit() - t.Elapsed
 }
 
 func (t *Target) AddElapsed(elapsed float64) {
 	t.Elapsed += elapsed
-	t.SetReportValues()
+	t.Remaining = t.getLimit() - t.Elapsed
 }
 
 func (t *Target) SetElapsed(elapsed float64) {
 	t.Elapsed = elapsed
-	t.SetReportValues()
+	t.Remaining = t.getLimit() - elapsed
 }
 
 func (t *Target) ResetElapsed() {
 	t.Elapsed = 0
-	t.SetReportValues()
+	t.Remaining = t.getLimit()
 }
 
 func (t *Target) CheckLimit() bool {
-	if t.Limit == 0 {
+	limit := t.getLimit()
+	if limit == 0 {
 		return false
 	}
 
-	return t.Elapsed > t.getLimit()
+	return t.Elapsed >= limit
 }
 
 func (t *Target) CheckWarning() bool {
-	if t.WarningOn == 0 {
+	warn := t.getWarningOn()
+	if warn == 0 {
 		return false
 	}
 
-	return t.Elapsed > t.getWarningOn()
-}
-
-func (t *Target) setDefaultFactors() {
-	if t.WeekdayFactors == nil {
-		t.WeekdayFactors = map[int]float64{}
-	}
-
-	for i := 0; i < 7; i++ {
-		if _, found := t.WeekdayFactors[i]; !found {
-			if i == 0 || i == 6 {
-				t.WeekdayFactors[i] = DEFAULT_WEEKEND_FACTOR
-			} else {
-				t.WeekdayFactors[i] = DEFAULT_WEEKDAY_FACTOR
-			}
-		}
-	}
-}
-
-func (t *Target) getFactor() float64 {
-	today := int(time.Now().Weekday())
-
-	t.setDefaultFactors()
-
-	return t.WeekdayFactors[today]
-}
-
-func (t *Target) applyFactor(limit float64) float64 {
-	return limit * t.getFactor()
+	return t.Elapsed > warn
 }
 
 func (t *Target) getLimit() float64 {
-	return t.applyFactor(t.Limit)
+	today := int(time.Now().Weekday())
+
+	factor, found := t.Weekdays[today]
+
+	if !found {
+		factor = DEFAULT_WEEKDAY_LIMIT
+	}
+
+	t.Limit = DEFAULT_BASE_LIMIT * factor
+	return t.Limit
 }
 
 func (t *Target) getWarningOn() float64 {
-	return t.applyFactor(t.WarningOn)
+	t.WarningOn = t.getLimit() * DEFAULT_WARNING_ON
+	return t.WarningOn
 }

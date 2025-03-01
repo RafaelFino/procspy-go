@@ -38,7 +38,7 @@ func (t *Target) setWeekdays() {
 		t.Weekdays = map[int]float64{}
 	}
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		if _, found := t.Weekdays[i]; !found {
 			if i == 0 || i == 6 {
 				t.Weekdays[i] = DEFAULT_WEEKEND_LIMIT

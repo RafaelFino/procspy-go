@@ -58,7 +58,7 @@ func (d *DbConnection) Close() error {
 	return nil
 }
 
-func (d *DbConnection) Exec(query string, args ...interface{}) error {
+func (d *DbConnection) Exec(query string, args ...any) error {
 	conn, err := d.GetConn()
 
 	if err != nil {

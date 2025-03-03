@@ -170,6 +170,10 @@ func (t *Target) getLimit() float64 {
 	}
 
 	t.Limit = DEFAULT_BASE_LIMIT * factor
+	if t.Remaining <= 0 {
+		t.Remaining = t.Limit
+	}
+
 	return t.Limit
 }
 

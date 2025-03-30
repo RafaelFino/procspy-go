@@ -92,7 +92,7 @@ tr:nth-child(even) {
 <body>
 <h1 font-family: monospace;>Procspy Report: ` + user + `</h1>
 <table>
-<tr><th>Name</th><th>Pattern</th><th>Limit</th><th>Elapsed</th><th>Remaining</th><th>First</th><th>Last</th>
+<tr><th>Name</th><th>Limit</th><th>Elapsed</th><th>Remaining</th><th>First</th><th>Last</th>
 <th>Sun</th>
 <th>Mon</th>
 <th>Tue</th>
@@ -104,7 +104,6 @@ tr:nth-child(even) {
 	for _, target := range targets.Targets {
 		htmlContent += "<tr>"
 		htmlContent += "<td>" + html.EscapeString(target.Name) + "</td>"
-		htmlContent += "<td>" + html.EscapeString(target.Pattern) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Limit, time.Second)) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Elapsed, time.Second)) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Remaining, time.Second)) + "</td>"

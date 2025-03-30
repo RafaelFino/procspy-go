@@ -29,6 +29,7 @@ type Server struct {
 	commandHandler *handlers.Command
 	targetHandler  *handlers.Target
 	matchHandler   *handlers.Match
+	reportHandler  *handlers.Report
 
 	srv *http.Server
 }
@@ -56,7 +57,8 @@ func (s *Server) initServices() {
 	s.commandHandler = handlers.NewCommand(commandService, userService)
 	s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
 	s.matchHandler = handlers.NewMatch(matchService, userService)
-	log.Printf("Handlers initialized")
+	s.reportHandler = handlers.NewReport(targetService, userService, matchService)
+	log.Printf("Handlers created")
 }
 
 func (s *Server) Start() {
@@ -75,6 +77,7 @@ func (s *Server) Start() {
 	s.router.GET("/targets/:user", s.targetHandler.GetTargets)
 	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
 	s.router.POST("/command/:user", s.commandHandler.InsertCommand)
+	s.router.GET("/report/:user", s.reportHandler.GetReport)
 
 	log.Print("Router started")
 

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"html"
 	"log"
 	"net/http"
@@ -91,27 +90,42 @@ tr:nth-child(even) {
 </style>
 </head>
 <body>
-<h1>Report: ` + user + `</h1>
+<h1 font-family: monospace;>Procspy Report: ` + user + `</h1>
 <table>
-<tr><th>Name</th><th>Pattern</th><th>Limit</th><th>Elapsed</th><th>Remaining</th><th>First</th><th>Last</th><th>Weekdays</th><th>Kill</th></tr>`
+<tr><th>Name</th><th>Pattern</th><th>Limit</th><th>Elapsed</th><th>Remaining</th><th>First</th><th>Last</th>
+<th>Sun</th>
+<th>Mon</th>
+<th>Tue</th>
+<th>Wed</th>
+<th>Thu</th>
+<th>Fri</th>
+<th>Sat</th>
+<th>Kill</th></tr>`
 	for _, target := range targets.Targets {
 		htmlContent += "<tr>"
 		htmlContent += "<td>" + html.EscapeString(target.Name) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(target.Pattern) + "</td>"
-		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Limit)) + "</td>"
-		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Elapsed)) + "</td>"
-		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Remaining)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Limit, time.Second)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Elapsed, time.Second)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Remaining, time.Second)) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(target.FirstMatch) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(target.LastMatch) + "</td>"
-		weekdays := ""
-		for k, v := range target.Weekdays {
-			weekdays += fmt.Sprintf("%s:%d ", FormatWeedkays(k), int(v))
-		}
-		htmlContent += "<td>" + html.EscapeString(weekdays) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[0], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[1], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[2], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[3], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[4], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[5], time.Hour)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[6], time.Hour)) + "</td>"
 		htmlContent += "<td>" + strconv.FormatBool(target.Kill) + "</td></tr>"
 	}
 	htmlContent += "</table></body></html>"
 
 	ctx.Header("Content-Length", strconv.Itoa(len(htmlContent)))
 	ctx.Data(http.StatusOK, "text/html", []byte(htmlContent))
+}
+
+func FormatInterval(seconds float64, scale time.Duration) string {
+	d := time.Duration(seconds * float64(scale))
+	return d.String()
 }

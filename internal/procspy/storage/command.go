@@ -113,3 +113,44 @@ VALUES
 
 	return err
 }
+
+func (c *Command) GetCommands(user string) ([]*domain.Command, error) {
+	log.Printf("[storage.Command] Get commands from user: %s", user)
+
+	ret := make([]*domain.Command, 0)
+	query := `
+SELECT
+	user User,
+	name Name,
+	command_line CommandLine,
+	command_return Return,
+	source Source,
+	command_log CommandLog,
+	created_at CreatedAt
+FROM
+	command_log
+WHERE
+	user = ?
+	and created_at >= date('now', 'localtime', '-7 day')
+ORDER BY
+	created_at DESC
+`
+	rows, err := c.conn.conn.Query(query, user)
+
+	if err != nil {
+		log.Printf("[storage.Command] Error executing query: %s -> error: %s", query, err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		cmd := domain.Command{}
+		if err := rows.Scan(&cmd.User, &cmd.Name, &cmd.CommandLine, &cmd.Return, &cmd.Source, &cmd.CommandLog, &cmd.CreatedAt); err != nil {
+			log.Printf("[storage.Command] Error scanning row: %s", err)
+			continue
+		}
+		ret = append(ret, &cmd)
+	}
+
+	return ret, nil
+}

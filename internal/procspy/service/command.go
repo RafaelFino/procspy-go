@@ -35,3 +35,8 @@ func (c *Command) InsertCommand(cmd *domain.Command) error {
 	log.Printf("[service.Command] Inserting command: %s", cmd.CommandLine)
 	return c.storage.InsertCommand(cmd)
 }
+
+func (c *Command) GetCommands(user string) ([]*domain.Command, error) {
+	log.Printf("[service.Command] Get commands from user: %s", user)
+	return c.storage.GetCommands(user)
+}

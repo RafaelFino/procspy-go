@@ -12,16 +12,18 @@ import (
 )
 
 type Report struct {
-	service *service.Target
-	users   *service.Users
-	matches *service.Match
+	service  *service.Target
+	users    *service.Users
+	matches  *service.Match
+	commands *service.Command
 }
 
-func NewReport(targetService *service.Target, usersService *service.Users, matches *service.Match) *Report {
+func NewReport(targetService *service.Target, usersService *service.Users, matches *service.Match, commandsService *service.Command) *Report {
 	return &Report{
-		service: targetService,
-		users:   usersService,
-		matches: matches,
+		service:  targetService,
+		users:    usersService,
+		matches:  matches,
+		commands: commandsService,
 	}
 }
 
@@ -63,6 +65,18 @@ func (r *Report) GetReport(ctx *gin.Context) {
 		return
 	}
 
+	commands, err := r.commands.GetCommands(user)
+
+	if err != nil {
+		log.Printf("[handler.Report] [%s] GetReport -> Error getting commands: %s", user, err)
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+			"error":     "internal error",
+			"elapsed":   time.Since(start).Milliseconds(),
+			"timestamp": time.Now().Format(time.RFC3339),
+		})
+		return
+	}
+
 	for _, target := range targets.Targets {
 		if info, ok := matches[target.Name]; ok {
 			target.AddMatchInfo(info)
@@ -91,6 +105,7 @@ tr:nth-child(even) {
 </head>
 <body>
 <h1 font-family: monospace;>Procspy Report: ` + user + `</h1>
+<h2>Targets</h2>
 <table>
 <tr><th>Name</th><th>Limit</th><th>Elapsed</th><th>Remaining</th><th>First</th><th>Last</th>
 <th>Sun</th>
@@ -117,6 +132,20 @@ tr:nth-child(even) {
 		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[5], time.Hour)) + "</td>"
 		htmlContent += "<td>" + html.EscapeString(FormatInterval(target.Weekdays[6], time.Hour)) + "</td>"
 		htmlContent += "<td>" + strconv.FormatBool(target.Kill) + "</td></tr>"
+	}
+	htmlContent += "</table><br>"
+	htmlContent += "<br><h2>Commands</h2>"
+	htmlContent += "<table>"
+	htmlContent += "<tr><th>Created At</th><th>Name</th><th>Command</th><th>Return</th><th>Source</th><th>Log</th></tr>"
+	for _, cmd := range commands {
+		htmlContent += "<tr>"
+		htmlContent += "<td>" + html.EscapeString(cmd.CreatedAt.Format(time.RFC3339)) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(cmd.Name) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(cmd.CommandLine) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(cmd.Return) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(cmd.Source) + "</td>"
+		htmlContent += "<td>" + html.EscapeString(cmd.CommandLog) + "</td>"
+		htmlContent += "</tr>"
 	}
 	htmlContent += "</table></body></html>"
 

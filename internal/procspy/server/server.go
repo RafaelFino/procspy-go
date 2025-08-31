@@ -57,7 +57,7 @@ func (s *Server) initServices() {
 	s.commandHandler = handlers.NewCommand(commandService, userService)
 	s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
 	s.matchHandler = handlers.NewMatch(matchService, userService)
-	s.reportHandler = handlers.NewReport(targetService, userService, matchService)
+	s.reportHandler = handlers.NewReport(targetService, userService, matchService, commandService)
 	log.Printf("Handlers created")
 }
 

@@ -281,8 +281,10 @@ func (s *Spy) run(last time.Time) error {
 				matches = append(matches, k)
 			}
 
+			strMatches := strings.Join(matches, " /")
+
 			log.Printf("[Spy]  > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
-			s.matchBuf <- domain.NewMatch(s.Config.User, target.Name, target.Pattern, strings.Join(matches, " / "), elapsed)
+			s.matchBuf <- domain.NewMatch(s.Config.User, target.Name, target.Pattern, strMatches, elapsed)
 
 			target.AddElapsed(elapsed)
 			log.Printf("[Spy]  > [%s] Add %.2fs -> Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
@@ -306,7 +308,7 @@ func (s *Spy) run(last time.Time) error {
 
 				if target.Kill {
 					log.Printf("[Spy]  >> [%s] Killing processes: %v", target.Name, pids)
-					s.kill(target.Name, pids)
+					s.kill(target.Name, strMatches, pids)
 					log.Printf("[Spy]  >> [%s] %d processes terminated", target.Name, len(pids))
 				}
 			} else {
@@ -334,24 +336,25 @@ func (s *Spy) run(last time.Time) error {
 	return err
 }
 
-func (s *Spy) kill(name string, pids []int) {
+func (s *Spy) kill(name string, pattern string, pids []int) {
 	if len(pids) == 0 {
 		return
 	}
 
 	for _, pid := range pids {
 		p, err := os.FindProcess(pid)
+
 		if err != nil {
 			log.Printf("[Kill]  >> Process %d not found: %s", pid, err)
 		} else {
 			err = p.Kill()
-			msg := ""
+			msg := "Process Killed"
 			if err != nil {
 				log.Printf("[Kill]  >> Warn: killing process %d: %s", pid, err)
 				msg = err.Error()
 			}
 
-			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("kill %d", pid), msg)
+			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("kill %d from %s", pid, pattern), msg)
 			cmd.Source = "Kill"
 			s.commandBuf <- cmd
 		}

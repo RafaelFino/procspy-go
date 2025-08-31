@@ -13,6 +13,8 @@ import (
 	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 )
 
+var buildDate string
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Print("Usage: procspy-server <config_file>\n")
@@ -68,14 +70,15 @@ func initLogger(path string) error {
 }
 
 func PrintLogo() {
-	fmt.Print(`
+	fmt.Printf(`
  _____                                                          _____                                      
 |  __ \                                                        / ____|                                     
 | |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | (___     ___   _ __  __   __   ___   _ __  
 |  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______|  \___ \   / _ \ | '__| \ \ / /  / _ \ | '__| 
 | |      | |    | (_) | | (__  \__ \ | |_) | | |_| |           ____) | |  __/ | |     \ V /  |  __/ | |    
 |_|      |_|     \___/   \___| |___/ | .__/   \__, |          |_____/   \___| |_|      \_/    \___| |_|    
-                                     | |      __/ /                                                        
-                                     |_|     |___/                                                         
-`)
+									 | |      __/ /                                                        
+									 |_|     |___/                                                         
+Build Date: %s
+`, buildDate)
 }

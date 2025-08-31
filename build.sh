@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 par=$1
 
 if [ "$par" == "clean" ]; then
@@ -11,23 +13,30 @@ if [ "$par" == "all" ]; then
     archs=( "amd64" )
     oses=( "linux" "windows" )
 
-    for os in "${oses[@]}"
-    do
-        for arch in "${archs[@]}"
-        do
+    for os in "${oses[@]}"; do
+        for arch in "${archs[@]}"; do
             for d in cmd/* ; do
-                echo "[$os $arch] Building ${d##*/} -> ./bin/$os-$arch/${d##*/}"
-                GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -ldflags="-s -w" -o bin/$os-$arch/${d##*/} $d/main.go
+                name=${d##*/}
+                outdir=bin/$os-$arch
+                mkdir -p "$outdir"
+                echo "[$os $arch] Building $name -> $outdir/$name"
+                GOOS=$os GOARCH=$arch CGO_ENABLED=1 \
+                    go build -ldflags "-s -w -X main.buildDate=$(date -u +'%Y-%m-%d_%H:%M:%S')" \
+                    -o "$outdir/$name" "$d/main.go"
             done
         done
     done
-    exit 0    
+    exit 0
 fi
 
-os=`go env GOOS`
-arch=`go env GOARCH`
+os=$(go env GOOS)
+arch=$(go env GOARCH)
 
 for d in cmd/* ; do
-    echo "[$os $arch] Building ${d##*/} -> ./bin/$os-$arch/${d##*/}"
-    GOOS=$os GOARCH=$arch CGO_ENABLED=1 go build -o bin/$os-$arch/${d##*/} $d/main.go
+    name=${d##*/}
+    outdir=bin/$os-$arch
+    mkdir -p "$outdir"
+    echo "[$os $arch] Building $name -> $outdir/$name"
+    GOOS=$os GOARCH=$arch CGO_ENABLED=1 \
+        go build -o "$outdir/$name" "$d/main.go"
 done

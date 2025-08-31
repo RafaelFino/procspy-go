@@ -13,6 +13,8 @@ import (
 	rotatelogs "github.com/lestrrat/go-file-rotatelogs"
 )
 
+var buildDate string
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Print("Usage: procspy <config_file>\n")
@@ -34,7 +36,7 @@ func main() {
 	}
 
 	PrintLogo()
-	fmt.Printf("\nStarting...\n")
+	fmt.Print("\nStarting client...\n")
 
 	service := client.NewSpy(cfg)
 	go service.Start()
@@ -43,7 +45,7 @@ func main() {
 	signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
 	<-quitChannel
 
-	log.Print("Stopping...\n")
+	fmt.Print("\nClient stopped.\n")
 }
 
 func initLogger(path string) error {
@@ -52,22 +54,26 @@ func initLogger(path string) error {
 		return err
 	}
 
+	//rotate logs every day and store last 30 days
 	writer, err := rotatelogs.New(
-		fmt.Sprintf("%s/client-%s.log", path, "%Y%m%d"),
-		rotatelogs.WithMaxAge(24*time.Hour),
-		rotatelogs.WithRotationTime(time.Hour),
-		rotatelogs.WithRotationCount(30), //30 days
+		fmt.Sprintf("%s/procspy-%%Y%%m%%d.log", path),
+		rotatelogs.WithLinkName(fmt.Sprintf("%s/procspy-latest.log", path)),
+		rotatelogs.WithMaxAge(30*24*time.Hour),
+		rotatelogs.WithRotationTime(24*time.Hour),
 	)
+
 	if err != nil {
-		log.Fatalf("Failed to Initialize Log File %s", err)
+		fmt.Printf("Failed to Initialize Log File %s", err)
+		log.SetOutput(os.Stdout)
+	} else {
+		log.SetOutput(writer)
 	}
-	log.SetOutput(writer)
 
 	return nil
 }
 
 func PrintLogo() {
-	fmt.Print(`
+	fmt.Printf(`
  _____                                                          _____   _   _                  _    
 |  __ \                                                        / ____| | | (_)                | |   
 | |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | |      | |  _    ___   _ __   | |_  
@@ -76,5 +82,6 @@ func PrintLogo() {
 |_|      |_|     \___/   \___| |___/ | .__/   \__, |           \_____| |_| |_|  \___| |_| |_|  \__| 
                                      | |      __/ /                                                 
                                      |_|     |___/                                                  
-    `)
+Build Date: %s
+`, buildDate)
 }

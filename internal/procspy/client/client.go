@@ -35,12 +35,7 @@ func NewSpy(config *config.Client) *Spy {
 		commandBuf: make(chan *domain.Command, 1000),
 		matchBuf:   make(chan *domain.Match, 1000),
 	}
-	/*
-		s.router.GET("/targets/:user", s.targetHandler.GetTargets)
-		s.router.POST("/match/:user", s.matchHandler.InsertMatch)
-		s.router.GET("/match/:user", s.matchHandler.GetMatches)
-		s.router.POST("/command/:user/:name", s.commandHandler.InsertCommand)
-	*/
+
 	return ret
 }
 
@@ -169,9 +164,7 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 		return fmt.Errorf("http post command error, http status code: %d", status)
 	}
 
-	if s.Config.Debug {
-		log.Printf("[PostCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
-	}
+	log.Printf("[PostCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
 
 	return nil
 }
@@ -233,8 +226,10 @@ func (s *Spy) consumeBuffers() {
 }
 
 func (s *Spy) run(last time.Time) error {
-	log.Printf("[Spy] Starting...")
-	defer log.Printf("[Spy] Finished")
+	var startedAt = time.Now()
+	defer func() {
+		log.Printf("[Spy] Process scan finished on %s", time.Since(startedAt).String())
+	}()
 
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
 

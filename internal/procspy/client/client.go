@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/domain"
+	"runtime"
 	"strings"
 	"time"
 
@@ -281,7 +282,7 @@ func (s *Spy) run(last time.Time) error {
 				matches = append(matches, k)
 			}
 
-			strMatches := strings.Join(matches, " /")
+			strMatches := strings.Join(matches, " / ")
 
 			log.Printf("[Spy]  > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
 			s.matchBuf <- domain.NewMatch(s.Config.User, target.Name, target.Pattern, strMatches, elapsed)
@@ -354,8 +355,8 @@ func (s *Spy) kill(name string, pattern string, pids []int) {
 				msg = err.Error()
 			}
 
-			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("kill %d from %s", pid, pattern), msg)
-			cmd.Source = "Kill"
+			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("PID %d from %s", pid, pattern), msg)
+			cmd.Source = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 			s.commandBuf <- cmd
 		}
 	}

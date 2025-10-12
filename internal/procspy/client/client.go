@@ -442,7 +442,7 @@ func roundFloat(val float64, precision uint) float64 {
 }
 
 func executeCommand(command string) (string, error) {
-	cmd := exec.Command("sh", "-c", command)
+	cmd := exec.Command(command)
 
 	log.Printf("[executeCommand] Executing command: %s", command)
 	err := cmd.Run()

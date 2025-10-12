@@ -41,7 +41,7 @@ func (w *Watcher) Stop() {
 }
 
 func executeCommand(command string) (string, error) {
-	cmd := exec.Command("sh", "-c", command)
+	cmd := exec.Command(command)
 
 	log.Printf("[executeCommand] Executing command: %s", command)
 	err := cmd.Run()

@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-par=$1
+# if no args, consider "all"
+par=${1:-all}
 
 if [ "$par" == "clean" ]; then
     echo "Cleaning bin directory"

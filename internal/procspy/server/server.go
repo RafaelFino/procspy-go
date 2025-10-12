@@ -26,10 +26,11 @@ type Server struct {
 
 	dbConn *storage.DbConnection
 
-	commandHandler *handlers.Command
-	targetHandler  *handlers.Target
-	matchHandler   *handlers.Match
-	reportHandler  *handlers.Report
+	commandHandler     *handlers.Command
+	targetHandler      *handlers.Target
+	matchHandler       *handlers.Match
+	reportHandler      *handlers.Report
+	healthcheckHandler *handlers.Healthcheck
 
 	srv *http.Server
 }
@@ -58,6 +59,7 @@ func (s *Server) initServices() {
 	s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
 	s.matchHandler = handlers.NewMatch(matchService, userService)
 	s.reportHandler = handlers.NewReport(targetService, userService, matchService, commandService)
+	s.healthcheckHandler = handlers.NewHealthcheck()
 	log.Printf("Handlers created")
 }
 
@@ -78,6 +80,7 @@ func (s *Server) Start() {
 	s.router.POST("/match/:user", s.matchHandler.InsertMatch)
 	s.router.POST("/command/:user", s.commandHandler.InsertCommand)
 	s.router.GET("/report/:user", s.reportHandler.GetReport)
+	s.router.GET("/healthcheck", s.healthcheckHandler.GetStatus)
 
 	log.Print("Router started")
 

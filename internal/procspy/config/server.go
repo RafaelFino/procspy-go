@@ -28,7 +28,7 @@ func (s *Server) ToJson() string {
 	return string(ret)
 }
 
-func ConfigServerFromJson(jsonString string) (*Server, error) {
+func ServerConfigFromJson(jsonString string) (*Server, error) {
 	ret := &Server{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
@@ -41,12 +41,12 @@ func ConfigServerFromJson(jsonString string) (*Server, error) {
 	return ret, nil
 }
 
-func ConfigServerFromFile(path string) (*Server, error) {
+func ServerConfigFromFile(path string) (*Server, error) {
 	byteValue, err := os.ReadFile(path)
 	if err != nil {
 		log.Printf("Error reading file: %s", err)
 		return nil, err
 	}
 
-	return ConfigServerFromJson(string(byteValue))
+	return ServerConfigFromJson(string(byteValue))
 }

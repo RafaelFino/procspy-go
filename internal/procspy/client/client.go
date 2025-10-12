@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,52 +11,99 @@ import (
 	"os/exec"
 	"procspy/internal/procspy/config"
 	"procspy/internal/procspy/domain"
+	"procspy/internal/procspy/handlers"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/go-ps"
 	_ "github.com/mitchellh/go-ps"
 )
 
 type Spy struct {
-	Config     *config.Client
-	enabled    bool
-	currentDay int
-	targets    *domain.TargetList
-	commandBuf chan *domain.Command
-	matchBuf   chan *domain.Match
+	config             *config.Client
+	enabled            bool
+	currentDay         int
+	targets            *domain.TargetList
+	commandBuf         chan *domain.Command
+	matchBuf           chan *domain.Match
+	healthcheckHandler *handlers.Healthcheck
+	router             *gin.Engine
+	srv                *http.Server
 }
 
 func NewSpy(config *config.Client) *Spy {
 	ret := &Spy{
-		Config:     config,
-		enabled:    false,
-		currentDay: time.Now().Day(),
-		targets:    domain.NewTargetList(),
-		commandBuf: make(chan *domain.Command, 1000),
-		matchBuf:   make(chan *domain.Match, 1000),
+		config:             config,
+		enabled:            false,
+		currentDay:         time.Now().Day(),
+		targets:            domain.NewTargetList(),
+		commandBuf:         make(chan *domain.Command, 1000),
+		matchBuf:           make(chan *domain.Match, 1000),
+		healthcheckHandler: handlers.NewHealthcheck(),
 	}
 
 	return ret
 }
 
+func (s *Spy) startHttpServer() {
+	gin.ForceConsoleColor()
+	gin.DefaultWriter = log.Writer()
+	gin.DefaultErrorWriter = log.Writer()
+	if s.config.Debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	s.router = gin.Default()
+	s.router.GET("/healthcheck", s.healthcheckHandler.GetStatus)
+
+	log.Print("[startHttpServer] Router started")
+
+	s.srv = &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", s.config.APIHost, s.config.APIPort),
+		Handler: s.router,
+	}
+
+	log.Printf("[startHttpServer] Server running under goroutine, listen and serve on %s:%d", s.config.APIHost, s.config.APIPort)
+	if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("[startHttpServer] listen: %s\n", err)
+	}
+
+	log.Print("[startHttpServer] Server stopped")
+}
+
+func (s *Spy) stopHttpServer() {
+	log.Printf("[stopHttpServer] Stopping http server...")
+	if s.srv != nil {
+		if err := s.srv.Close(); err != nil {
+			log.Printf("[stopHttpServer] Error stopping http server: %s", err)
+		} else {
+			log.Printf("[stopHttpServer] Http server stopped")
+		}
+	} else {
+		log.Printf("[stopHttpServer] Http server is nil")
+	}
+}
+
 func (s *Spy) httpGet(url string) (string, int, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("[client] Error getting url: %s", err)
+		log.Printf("[httpGet] Error getting url: %s", err)
 		return "", http.StatusInternalServerError, err
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("[client] Error reading body: %s", err)
+		log.Printf("[httpGet] Error reading body: %s", err)
 		return "", res.StatusCode, err
 	}
 
-	if s.Config.Debug {
-		log.Printf("[HTTP-GET] %d Response: %s", res.StatusCode, body)
+	if s.config.Debug {
+		log.Printf("[httpGet] %d Response: %s", res.StatusCode, body)
 	}
 
 	return string(body), res.StatusCode, nil
@@ -64,19 +112,19 @@ func (s *Spy) httpGet(url string) (string, int, error) {
 func (s *Spy) httpPost(url string, data string) (string, int, error) {
 	res, err := http.Post(url, "application/json", strings.NewReader(data))
 	if err != nil {
-		log.Printf("[client] Error posting url: %s", err)
+		log.Printf("[httpPost] Error posting url: %s", err)
 		return "", http.StatusInternalServerError, err
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("[client] Error reading body: %s", err)
+		log.Printf("[httpPost] Error reading body: %s", err)
 		return "", res.StatusCode, err
 	}
 
-	if s.Config.Debug {
-		log.Printf("[HTTP-POST] %d \nRequest: %s\nResponse: %s", res.StatusCode, data, body)
+	if s.config.Debug {
+		log.Printf("[httpPost] %d \nRequest: %s\nResponse: %s", res.StatusCode, data, body)
 	}
 
 	return string(body), res.StatusCode, nil
@@ -87,34 +135,34 @@ func (s *Spy) updateTargets() {
 		s.targets = domain.NewTargetList()
 	}
 
-	targetUrl := fmt.Sprintf("%s/targets/%s", s.Config.ServerURL, s.Config.User)
+	targetUrl := fmt.Sprintf("%s/targets/%s", s.config.ServerURL, s.config.User)
 
 	data, status, err := s.httpGet(targetUrl)
 
 	if err != nil {
-		log.Printf("[UpdateTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
+		log.Printf("[updateTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
 		return
 	}
 
 	if status != http.StatusOK {
-		log.Printf("[UpdateTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
+		log.Printf("[updateTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
 		return
 	}
 
 	targets, err := domain.TargetListFromJson(data)
 
 	if err != nil {
-		log.Printf("[UpdateTargets] Error getting targets: %s -> bad format", err)
+		log.Printf("[updateTargets] Error getting targets: %s -> bad format", err)
 		return
 	}
 
 	if targets == nil {
-		log.Printf("[UpdateTargets] Error getting targets: nil")
+		log.Printf("[updateTargets] Error getting targets: nil")
 		return
 	}
 
 	if len(targets.Targets) == 0 {
-		log.Printf("[UpdateTargets] No targets found")
+		log.Printf("[updateTargets] No targets found")
 	}
 
 	s.targets = targets
@@ -125,22 +173,22 @@ func (s *Spy) postMatch(match *domain.Match) error {
 		return fmt.Errorf("match is nil")
 	}
 
-	matchUrl := fmt.Sprintf("%s/match/%s", s.Config.ServerURL, s.Config.User)
+	matchUrl := fmt.Sprintf("%s/match/%s", s.config.ServerURL, s.config.User)
 
 	data, status, err := s.httpPost(matchUrl, match.ToJson())
 
 	if err != nil {
-		log.Printf("[PostMatch] Error posting match, http status code: %d to %s -> error: %s", status, matchUrl, err)
+		log.Printf("[postMatch] Error posting match, http status code: %d to %s -> error: %s", status, matchUrl, err)
 		return err
 	}
 
 	if status != http.StatusCreated {
-		log.Printf("[PostMatch] Error posting match, http status code: %d to %s", status, matchUrl)
+		log.Printf("[postMatch] Error posting match, http status code: %d to %s", status, matchUrl)
 		return fmt.Errorf("http post match error, http status code: %d", status)
 	}
 
-	if s.Config.Debug {
-		log.Printf("[PostMatch] Match POST return: %s\n from \n%s", data, match.ToJson())
+	if s.config.Debug {
+		log.Printf("[postMatch] Match POST return: %s\n from \n%s", data, match.ToJson())
 	}
 
 	return nil
@@ -151,21 +199,21 @@ func (s *Spy) postCommand(cmd *domain.Command) error {
 		return fmt.Errorf("command is nil")
 	}
 
-	commandUrl := fmt.Sprintf("%s/command/%s", s.Config.ServerURL, s.Config.User)
+	commandUrl := fmt.Sprintf("%s/command/%s", s.config.ServerURL, s.config.User)
 
 	data, status, err := s.httpPost(commandUrl, cmd.ToJson())
 
 	if err != nil {
-		log.Printf("[PostCommand] Error posting command, http status code: %d to %s -> error: %s", status, commandUrl, err)
+		log.Printf("[postCommand] Error posting command, http status code: %d to %s -> error: %s", status, commandUrl, err)
 		return err
 	}
 
 	if status != http.StatusCreated {
-		log.Printf("[PostCommand] Error posting command, http status code: %d to %s", status, commandUrl)
+		log.Printf("[postCommand] Error posting command, http status code: %d to %s", status, commandUrl)
 		return fmt.Errorf("http post command error, http status code: %d", status)
 	}
 
-	log.Printf("[PostCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
+	log.Printf("[postCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
 
 	return nil
 }
@@ -177,7 +225,7 @@ func (s *Spy) consumeBuffers() {
 	}
 
 	if s.commandBuf == nil {
-		log.Printf("[Spy] Command buffer is nil")
+		log.Printf("[consumeBuffers] Command buffer is nil")
 		s.commandBuf = make(chan *domain.Command, 1000)
 	}
 
@@ -185,28 +233,28 @@ func (s *Spy) consumeBuffers() {
 		//Buffer
 		matchDlq := make(chan *domain.Match, len(s.matchBuf))
 		for len(s.matchBuf) > 0 {
-			if s.Config.Debug {
-				log.Printf("[Spy] %d matches in buffer", len(s.matchBuf))
+			if s.config.Debug {
+				log.Printf("[consumeBuffers] %d matches in buffer", len(s.matchBuf))
 			}
 
 			match := <-s.matchBuf
 			err := s.postMatch(match)
 			if err != nil {
-				log.Printf("[Spy] Error posting match: %s, waiting for next process", err)
+				log.Printf("[consumeBuffers] Error posting match: %s, waiting for next process", err)
 				matchDlq <- match
 			}
 		}
 
 		cmdDlq := make(chan *domain.Command, len(s.commandBuf))
 		for len(s.commandBuf) > 0 {
-			if s.Config.Debug {
-				log.Printf("[Spy] %d commands in buffer", len(s.commandBuf))
+			if s.config.Debug {
+				log.Printf("[consumeBuffers] %d commands in buffer", len(s.commandBuf))
 			}
 
 			cmd := <-s.commandBuf
 			err := s.postCommand(cmd)
 			if err != nil {
-				log.Printf("[Spy] Error posting command: %s, waiting for next process", err)
+				log.Printf("[consumeBuffers] Error posting command: %s, waiting for next process", err)
 				cmdDlq <- cmd
 			}
 		}
@@ -214,13 +262,13 @@ func (s *Spy) consumeBuffers() {
 		//DLQ
 		for len(matchDlq) > 0 {
 			match := <-matchDlq
-			log.Printf("[Spy] Add match to post dlq: %s", match.ToJson())
+			log.Printf("[consumeBuffers] Add match to post dlq: %s", match.ToJson())
 			s.matchBuf <- match
 		}
 
 		for len(cmdDlq) > 0 {
 			cmd := <-cmdDlq
-			log.Printf("[Spy] Add command to post dlq: %s", cmd.ToJson())
+			log.Printf("[consumeBuffers] Add command to post dlq: %s", cmd.ToJson())
 			s.commandBuf <- cmd
 		}
 	}()
@@ -229,7 +277,7 @@ func (s *Spy) consumeBuffers() {
 func (s *Spy) run(last time.Time) error {
 	var startedAt = time.Now()
 	defer func() {
-		log.Printf("[Spy] Process scan finished on %s", time.Since(startedAt).String())
+		log.Printf("[run] Process scan finished on %s", time.Since(startedAt).String())
 	}()
 
 	elapsed := roundFloat(time.Since(last).Seconds(), 2)
@@ -239,7 +287,7 @@ func (s *Spy) run(last time.Time) error {
 
 	processes, err := ps.Processes()
 	if err != nil {
-		log.Printf("[Spy] Error getting processes: %s", err)
+		log.Printf("[run] Error getting processes: %s", err)
 		return err
 	}
 
@@ -260,22 +308,22 @@ func (s *Spy) run(last time.Time) error {
 		}
 
 		if len(target.CheckCommand) > 0 {
-			log.Printf("[Spy]  > [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
+			log.Printf("[run]  > [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
 			cmdLog, err := executeCommand(target.CheckCommand)
 
 			if err != nil {
-				log.Printf("[Spy]  > [%s] Error executing check command [%s]: %s -> %s", target.Name, target.CheckCommand, err, cmdLog)
+				log.Printf("[run]  > [%s] Error executing check command [%s]: %s -> %s", target.Name, target.CheckCommand, err, cmdLog)
 			} else {
-				log.Printf("[Spy]  > [%s] Check command [%s] -> %s", target.Name, target.CheckCommand, cmdLog)
+				log.Printf("[run]  > [%s] Check command [%s] -> %s", target.Name, target.CheckCommand, cmdLog)
 			}
 
-			cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
+			cmd := domain.NewCommand(s.config.User, target.Name, target.LimitCommand, cmdLog)
 			cmd.Source = "Check"
 			s.commandBuf <- cmd
 		}
 
 		if match {
-			log.Printf("[Spy]  > [%s] Found %d processes: %v", target.Name, len(pids), pids)
+			log.Printf("[run]  > [%s] Found %d processes: %v", target.Name, len(pids), pids)
 
 			matches := make([]string, 0)
 			for k := range names {
@@ -284,48 +332,48 @@ func (s *Spy) run(last time.Time) error {
 
 			strMatches := strings.Join(matches, " / ")
 
-			log.Printf("[Spy]  > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
-			s.matchBuf <- domain.NewMatch(s.Config.User, target.Name, target.Pattern, strMatches, elapsed)
+			log.Printf("[run]  > [%s] Match process with pattern %s (%s) -> %v", target.Name, target.Pattern, matches, pids)
+			s.matchBuf <- domain.NewMatch(s.config.User, target.Name, target.Pattern, strMatches, elapsed)
 
 			target.AddElapsed(elapsed)
-			log.Printf("[Spy]  > [%s] Add %.2fs -> Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
+			log.Printf("[run]  > [%s] Add %.2fs -> Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
 
 			if target.CheckLimit() {
-				log.Printf("[Spy]  >> [%s] Exceeded limit of %.2f seconds", target.Name, target.Limit)
+				log.Printf("[run]  >> [%s] Exceeded limit of %.2f seconds", target.Name, target.Limit)
 
 				if len(target.LimitCommand) > 0 {
 					cmdLog, err := executeCommand(target.LimitCommand)
 
 					if err != nil {
-						log.Printf("[Spy]  >> [%s] Error executing limit command [%s]: %s -> %s", target.Name, target.LimitCommand, err, cmdLog)
+						log.Printf("[run]  >> [%s] Error executing limit command [%s]: %s -> %s", target.Name, target.LimitCommand, err, cmdLog)
 					} else {
-						log.Printf("[Spy]  >> [%s] Limit command [%s] -> %s", target.Name, target.LimitCommand, cmdLog)
+						log.Printf("[run]  >> [%s] Limit command [%s] -> %s", target.Name, target.LimitCommand, cmdLog)
 					}
 
-					cmd := domain.NewCommand(s.Config.User, target.Name, target.LimitCommand, cmdLog)
+					cmd := domain.NewCommand(s.config.User, target.Name, target.LimitCommand, cmdLog)
 					cmd.Source = "Limit"
 					s.commandBuf <- cmd
 				}
 
 				if target.Kill {
-					log.Printf("[Spy]  >> [%s] Killing processes: %v", target.Name, pids)
+					log.Printf("[run]  >> [%s] Killing processes: %v", target.Name, pids)
 					s.kill(target.Name, strMatches, pids)
-					log.Printf("[Spy]  >> [%s] %d processes terminated", target.Name, len(pids))
+					log.Printf("[run]  >> [%s] %d processes terminated", target.Name, len(pids))
 				}
 			} else {
 				if target.CheckWarning() {
-					log.Printf("[Spy]  >> [%s] Warning on %.2f seconds", target.Name, target.WarningOn)
+					log.Printf("[run]  >> [%s] Warning on %.2f seconds", target.Name, target.WarningOn)
 
 					if len(target.WarningCommand) > 0 {
 						cmdLog, err := executeCommand(target.WarningCommand)
 
 						if err != nil {
-							log.Printf("[Spy]  >> [%s] Error executing warning command [%s]: %s -> %s", target.Name, target.WarningCommand, err, cmdLog)
+							log.Printf("[run]  >> [%s] Error executing warning command [%s]: %s -> %s", target.Name, target.WarningCommand, err, cmdLog)
 						} else {
-							log.Printf("[Spy]  >> [%s] Warning command [%s] -> %s", target.Name, target.WarningCommand, cmdLog)
+							log.Printf("[run]  >> [%s] Warning command [%s] -> %s", target.Name, target.WarningCommand, cmdLog)
 						}
 
-						cmd := domain.NewCommand(s.Config.User, target.Name, target.WarningCommand, cmdLog)
+						cmd := domain.NewCommand(s.config.User, target.Name, target.WarningCommand, cmdLog)
 						cmd.Source = "Warning"
 						s.commandBuf <- cmd
 					}
@@ -346,16 +394,16 @@ func (s *Spy) kill(name string, pattern string, pids []int) {
 		p, err := os.FindProcess(pid)
 
 		if err != nil {
-			log.Printf("[Kill]  >> Process %d not found: %s", pid, err)
+			log.Printf("[kill]  >> Process %d not found: %s", pid, err)
 		} else {
 			err = p.Kill()
 			msg := "Process Killed"
 			if err != nil {
-				log.Printf("[Kill]  >> Warn: killing process %d: %s", pid, err)
+				log.Printf("[kill]  >> Warn: killing process %d: %s", pid, err)
 				msg = err.Error()
 			}
 
-			cmd := domain.NewCommand(s.Config.User, name, fmt.Sprintf("PID %d from %s", pid, pattern), msg)
+			cmd := domain.NewCommand(s.config.User, name, fmt.Sprintf("PID %d from %s", pid, pattern), msg)
 			cmd.Source = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 			s.commandBuf <- cmd
 		}
@@ -363,21 +411,25 @@ func (s *Spy) kill(name string, pattern string, pids []int) {
 }
 
 func (s *Spy) Start() {
-	last := time.Now().Add(-time.Duration(s.Config.Interval) * time.Second)
+	last := time.Now().Add(-time.Duration(s.config.Interval) * time.Second)
+
+	go s.startHttpServer()
+
 	s.enabled = true
 
-	log.Printf("[StartSpy] Starting with config ->\n%s", s.Config.ToJson())
+	log.Printf("[Start] Starting with config ->\n%s", s.config.ToJson())
 
 	for s.enabled {
 		s.run(last)
 		last = time.Now()
-		time.Sleep(time.Duration(s.Config.Interval) * time.Second)
+		time.Sleep(time.Duration(s.config.Interval) * time.Second)
 	}
 }
 
 func (s *Spy) Stop() {
 	s.enabled = false
-	log.Printf("[StopSpy] Stopping...")
+	s.stopHttpServer()
+	log.Printf("[Stop] Stopping...")
 }
 
 func (s *Spy) IsEnabled() bool {
@@ -392,17 +444,17 @@ func roundFloat(val float64, precision uint) float64 {
 func executeCommand(command string) (string, error) {
 	cmd := exec.Command("sh", "-c", command)
 
-	log.Printf("[ExecuteCommand] Executing command: %s", command)
+	log.Printf("[executeCommand] Executing command: %s", command)
 	err := cmd.Run()
 
 	if err != nil {
-		log.Printf("[ExecuteCommand] Error executing command: %s -> %s", command, err)
+		log.Printf("[executeCommand] Error executing command: %s -> %s", command, err)
 	}
 
 	buf, err := cmd.Output()
 
 	if err != nil {
-		log.Printf("[ExecuteCommand] Error to read command output: %s -> %s", command, err)
+		log.Printf("[executeCommand] Error to read command output: %s -> %s", command, err)
 	}
 
 	return string(buf), err

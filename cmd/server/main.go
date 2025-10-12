@@ -23,7 +23,7 @@ func main() {
 
 	configFile := os.Args[1]
 
-	cfg, err := config.ConfigServerFromFile(configFile)
+	cfg, err := config.ServerConfigFromFile(configFile)
 
 	if err != nil {
 		fmt.Printf("Error loading config file: %s", err)

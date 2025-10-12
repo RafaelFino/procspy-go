@@ -12,12 +12,35 @@ type Client struct {
 	ServerURL string `json:"server_url"`
 	User      string `json:"user"`
 	Debug     bool   `json:"debug,omitempty"`
+	APIPort   int    `json:"api_port,omitempty"`
+	APIHost   string `json:"api_host,omitempty"`
 }
 
 func NewConfig() *Client {
 	return &Client{
 		Interval: 30,
-		LogPath:  "log/procspy.log",
+		LogPath:  "logs",
+		Debug:    false,
+		APIPort:  8888,
+		APIHost:  "localhost",
+	}
+}
+
+func (c *Client) SetDefaults() {
+	if c.Interval < 30 {
+		c.Interval = 30
+	}
+
+	if c.LogPath == "" {
+		c.LogPath = "logs"
+	}
+
+	if c.APIPort == 0 {
+		c.APIPort = 8888
+	}
+
+	if c.APIHost == "" {
+		c.APIHost = "localhost"
 	}
 }
 
@@ -30,7 +53,7 @@ func (c *Client) ToJson() string {
 	return string(ret)
 }
 
-func ConfigClientFromJson(jsonString string) (*Client, error) {
+func ClientConfigFromJson(jsonString string) (*Client, error) {
 	ret := &Client{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
@@ -38,17 +61,19 @@ func ConfigClientFromJson(jsonString string) (*Client, error) {
 		return nil, err
 	}
 
+	ret.SetDefaults()
+
 	log.Printf("Client config: %s", ret.ToJson())
 
 	return ret, nil
 }
 
-func ConfigClientFromFile(path string) (*Client, error) {
+func ClientConfigFromFile(path string) (*Client, error) {
 	byteValue, err := os.ReadFile(path)
 	if err != nil {
 		log.Printf("Error reading file: %s", err)
 		return nil, err
 	}
 
-	return ConfigClientFromJson(string(byteValue))
+	return ClientConfigFromJson(string(byteValue))
 }

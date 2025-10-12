@@ -131,7 +131,7 @@ FROM
 	command_log
 WHERE
 	user = ?
-	and created_at >= date('now', 'localtime', '-7 day')
+	and created_at >= date('now', 'localtime', '-2 day')
 ORDER BY
 	created_at DESC
 `

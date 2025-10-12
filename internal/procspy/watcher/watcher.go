@@ -68,11 +68,11 @@ func (w *Watcher) check() {
 		log.Printf("[check] Procspy is down! Status: %d, Error: %s", status, err)
 
 		if w.config.StartCmd != "" {
-			_, err := executeCommand(w.config.StartCmd)
+			ret, err := executeCommand(w.config.StartCmd)
 			if err != nil {
 				log.Printf("[check] Error executing start command: %s", err)
 			} else {
-				log.Printf("[check] Start command executed successfully")
+				log.Printf("[check] Start command executed successfully -> %s", ret)
 			}
 		} else {
 			log.Printf("[check] No start command configured")
@@ -95,8 +95,6 @@ func (w *Watcher) httpGet(url string) (string, int, error) {
 		log.Printf("[httpGet] Error reading body: %s", err)
 		return "", res.StatusCode, err
 	}
-
-	log.Printf("[httpGet] %d Response: %s", res.StatusCode, body)
 
 	return string(body), res.StatusCode, nil
 }

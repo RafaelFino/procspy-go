@@ -1,6 +1,6 @@
 {
-    "log_path": "logs",  
+    "log_path": "logs",
     "interval": 10,
     "procspy_url": "http://localhost:8888/healthcheck",
-    "start_cmd": "echo \"Is down!\" >> /tmp/procspy.txt"
-}    
+    "start_cmd": "systemctl restart procspy-client"
+}

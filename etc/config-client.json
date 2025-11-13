@@ -1,7 +1,9 @@
 {
-    "user": "fino",
-    "log_path": "logs",  
+    "user": "nome_crianca",
+    "log_path": "logs",
     "debug": false,
     "interval": 5,
-    "server_url": "https://rgt-tools.duckdns.org/procspy"
+    "server_url": "https://seu-servidor.com/procspy",
+    "api_host": "localhost",
+    "api_port": 8888
 }

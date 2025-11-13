@@ -1,0 +1,72 @@
+# Caddyfile
+# Configuração do Caddy como proxy reverso para o Procspy Server
+# Copie para: /etc/caddy/Caddyfile
+# Recarregue com: sudo systemctl reload caddy
+
+# Configuração simples com HTTPS automático
+seu-dominio.com {
+    # Caddy obtém certificado SSL automaticamente via Let's Encrypt
+    
+    # Logs
+    log {
+        output file /var/log/caddy/procspy-access.log
+    }
+
+    # Proxy para Procspy Server
+    handle /procspy/* {
+        reverse_proxy localhost:8080 {
+            # Remove o prefixo /procspy antes de enviar ao backend
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Health check
+    handle /procspy/healthcheck {
+        reverse_proxy localhost:8080
+    }
+}
+
+# Configuração avançada com rate limiting e compressão
+# seu-dominio.com {
+#     # HTTPS automático
+#     
+#     # Compressão
+#     encode gzip zstd
+#     
+#     # Rate limiting (requer plugin)
+#     # rate_limit {
+#     #     zone dynamic {
+#     #         key {remote_host}
+#     #         events 100
+#     #         window 1m
+#     #     }
+#     # }
+#     
+#     # Logs estruturados
+#     log {
+#         output file /var/log/caddy/procspy.log {
+#             roll_size 100mb
+#             roll_keep 10
+#         }
+#         format json
+#     }
+#     
+#     # Proxy
+#     handle /procspy/* {
+#         reverse_proxy localhost:8080 {
+#             header_up Host {host}
+#             header_up X-Real-IP {remote_host}
+#             header_up X-Forwarded-For {remote_host}
+#             header_up X-Forwarded-Proto {scheme}
+#             
+#             # Timeouts
+#             transport http {
+#                 dial_timeout 5s
+#                 response_header_timeout 10s
+#             }
+#         }
+#     }
+# }

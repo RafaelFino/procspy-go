@@ -1,12 +1,13 @@
 {
-    "debug": true,
-    "log_path": "logs",  
+    "debug": false,
+    "log_path": "logs",
     "db_path": "data",
     "api_port": 8080,
-    "api_host": "localhost",
+    "api_host": "0.0.0.0",
+    "data_retention_days": 30,
     "user_targets": {
-        "fino": "https://rgt-tools.duckdns.org/drive/api/public/dl/BBCMfrvm/procspy-fino.targets",
-        "pepe": "https://rgt-tools.duckdns.org/drive/api/public/dl/KuH3f1y6/procspy-pepe.targets",
-        "beca": "https://rgt-tools.duckdns.org/drive/api/public/dl/zvuhsVkg/procspy-beca.targets"
+        "crianca1": "https://seu-servidor.com/drive/api/public/dl/ABC123/procspy-crianca1.targets",
+        "crianca2": "https://seu-servidor.com/drive/api/public/dl/DEF456/procspy-crianca2.targets",
+        "crianca3": "https://seu-servidor.com/drive/api/public/dl/GHI789/procspy-crianca3.targets"
     }
 }

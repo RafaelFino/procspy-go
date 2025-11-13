@@ -1,28 +1,106 @@
 {
-	"targets": [
-		{
-			"name": "games",
-			"limit": 7200,
-			"pattern": "roblox|steam|wine|cs.exe|hl.exe",
-			"kill": true
-		},	
-		{
-			"name": "browsers",
-			"limit": 14400,
-			"pattern": "chrome|firefox|opera|edge|iexplorer",
-			"kill": true
-		},
-		{
-			"name": "screen",
-			"limit": 18000,
-			"pattern": "NetworkManager|Xorg|init",
-			"kill": false
-		},
-		{
-			"name": "win-screen",
-			"limit": 18000,
-			"pattern": "explorer.exe",
-			"kill": false
-		}	
-	]
+    "targets": [
+        {
+            "name": "games",
+            "pattern": "roblox|steam|wine|cs\\.exe|hl\\.exe|minecraft|fortnite|valorant|league",
+            "kill": true,
+            "limit_command": "notify-send 'Procspy' 'Tempo de jogos esgotado!' -u critical",
+            "warning_command": "notify-send 'Procspy' 'Atenção: Faltam 5 minutos de jogo!' -u normal",
+            "check_command": "",
+            "weekdays": {
+                "0": 2.0,
+                "1": 0.5,
+                "2": 0.5,
+                "3": 0.5,
+                "4": 0.5,
+                "5": 0.5,
+                "6": 2.0
+            }
+        },
+        {
+            "name": "browsers",
+            "pattern": "chrome|firefox|opera|edge|msedge|brave|safari|vivaldi",
+            "kill": true,
+            "limit_command": "notify-send 'Procspy' 'Tempo de navegação esgotado!' -u critical",
+            "warning_command": "notify-send 'Procspy' 'Atenção: Faltam 10 minutos de navegação!' -u normal",
+            "check_command": "",
+            "weekdays": {
+                "0": 3.0,
+                "1": 1.0,
+                "2": 1.0,
+                "3": 1.0,
+                "4": 1.0,
+                "5": 1.0,
+                "6": 3.0
+            }
+        },
+        {
+            "name": "video-players",
+            "pattern": "vlc|mplayer|mpv|wmplayer|quicktime|totem",
+            "kill": false,
+            "limit_command": "notify-send 'Procspy' 'Tempo de vídeos esgotado!' -u normal",
+            "warning_command": "notify-send 'Procspy' 'Atenção: Faltam 15 minutos de vídeo!' -u normal",
+            "check_command": "",
+            "weekdays": {
+                "0": 2.5,
+                "1": 1.0,
+                "2": 1.0,
+                "3": 1.0,
+                "4": 1.0,
+                "5": 1.0,
+                "6": 2.5
+            }
+        },
+        {
+            "name": "social-media",
+            "pattern": "discord|spotify|whatsapp|telegram|slack|teams",
+            "kill": false,
+            "limit_command": "notify-send 'Procspy' 'Tempo de redes sociais esgotado!' -u normal",
+            "warning_command": "",
+            "check_command": "",
+            "weekdays": {
+                "0": 2.0,
+                "1": 0.5,
+                "2": 0.5,
+                "3": 0.5,
+                "4": 0.5,
+                "5": 0.5,
+                "6": 2.0
+            }
+        },
+        {
+            "name": "screen-time-windows",
+            "pattern": "explorer\\.exe",
+            "kill": false,
+            "limit_command": "",
+            "warning_command": "",
+            "check_command": "echo 'Monitorando tempo de tela Windows' >> /tmp/procspy-screen.log",
+            "weekdays": {
+                "0": 5.0,
+                "1": 2.0,
+                "2": 2.0,
+                "3": 2.0,
+                "4": 2.0,
+                "5": 2.0,
+                "6": 5.0
+            }
+        },
+        {
+            "name": "screen-time-linux",
+            "pattern": "Xorg|gnome-shell|kwin|xfce4-session|plasmashell",
+            "kill": false,
+            "limit_command": "",
+            "warning_command": "",
+            "check_command": "echo 'Monitorando tempo de tela Linux' >> /tmp/procspy-screen.log",
+            "weekdays": {
+                "0": 5.0,
+                "1": 2.0,
+                "2": 2.0,
+                "3": 2.0,
+                "4": 2.0,
+                "5": 2.0,
+                "6": 5.0
+            }
+        }
+    ]
 }

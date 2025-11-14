@@ -52,33 +52,7 @@ usage() {
     exit 0
 }
 
-# Função para executar testes
-run_tests() {
-    echo -e "${YELLOW}=== Executando Testes Unitários ===${NC}"
-    
-    # Verifica se há arquivos de teste
-    if ! find . -name "*_test.go" -type f | grep -q .; then
-        echo -e "${YELLOW}Aviso: Nenhum arquivo de teste encontrado${NC}"
-        return 0
-    fi
-    
-    # Executa testes com coverage
-    echo "Executando testes..."
-    if go test -v -race -coverprofile=coverage.out ./...; then
-        echo -e "${GREEN}✓ Todos os testes passaram${NC}"
-        
-        # Exibe coverage
-        if [ -f coverage.out ]; then
-            COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
-            echo -e "${GREEN}Coverage: ${COVERAGE}${NC}"
-        fi
-        
-        return 0
-    else
-        echo -e "${RED}✗ Testes falharam${NC}"
-        return 1
-    fi
-}
+
 
 # Função para compilar um componente
 build_component() {
@@ -129,6 +103,61 @@ build_platform() {
         build_component "server" "$goos" "$goarch" || return 1
     fi
     
+    echo ""
+    return 0
+}
+
+# Função para verificar formatação do código
+check_formatting() {
+    echo -e "${YELLOW}Verificando formatação do código (go fmt)...${NC}"
+    
+    # Lista arquivos não formatados
+    UNFORMATTED=$(gofmt -l . 2>&1 | grep -v "^vendor/" || true)
+    
+    if [ -n "$UNFORMATTED" ]; then
+        echo -e "${RED}✗ Arquivos não formatados encontrados:${NC}"
+        echo "$UNFORMATTED"
+        echo ""
+        echo -e "${YELLOW}Execute 'go fmt ./...' para corrigir${NC}"
+        return 1
+    else
+        echo -e "${GREEN}✓ Todos os arquivos estão formatados corretamente${NC}"
+        echo ""
+        return 0
+    fi
+}
+
+# Função para executar linter
+run_linter() {
+    echo -e "${YELLOW}Executando linter (go vet)...${NC}"
+    
+    if go vet ./...; then
+        echo -e "${GREEN}✓ Nenhum problema encontrado pelo linter${NC}"
+        echo ""
+        return 0
+    else
+        echo -e "${RED}✗ Problemas encontrados pelo linter${NC}"
+        echo ""
+        return 1
+    fi
+}
+
+# Função para executar verificações de qualidade
+run_quality_checks() {
+    echo -e "${YELLOW}=== Verificações de Qualidade ===${NC}"
+    echo ""
+    
+    # Verifica formatação
+    if ! check_formatting; then
+        return 1
+    fi
+    
+    # Executa linter
+    if ! run_linter; then
+        return 1
+    fi
+    
+    echo -e "${GREEN}✓ Todas as verificações de qualidade passaram${NC}"
     echo ""
     return 0
 }
@@ -186,9 +215,17 @@ if [ "$CLEAN" = true ]; then
     clean_build
 fi
 
+# Executa verificações de qualidade se não for build-only
+if [ "$BUILD_ONLY" = false ]; then
+    if ! run_quality_checks; then
+        echo -e "${RED}Build abortado devido a falhas nas verificações de qualidade${NC}"
+        exit 1
+    fi
+fi
+
 # Executa testes se não for build-only
 if [ "$BUILD_ONLY" = false ]; then
-    if ! run_tests; then
+    if ! ./test.sh; then
         echo -e "${RED}Build abortado devido a falhas nos testes${NC}"
         exit 1
     fi

@@ -1,0 +1,2835 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>client: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">procspy/cmd/client/main.go (0.0%)</option>
+				
+				<option value="file1">procspy/cmd/server/main.go (0.0%)</option>
+				
+				<option value="file2">procspy/cmd/watcher/main.go (0.0%)</option>
+				
+				<option value="file3">procspy/internal/procspy/client/client.go (2.2%)</option>
+				
+				<option value="file4">procspy/internal/procspy/config/client.go (96.2%)</option>
+				
+				<option value="file5">procspy/internal/procspy/config/server.go (94.1%)</option>
+				
+				<option value="file6">procspy/internal/procspy/config/watcher.go (95.8%)</option>
+				
+				<option value="file7">procspy/internal/procspy/domain/command.go (76.5%)</option>
+				
+				<option value="file8">procspy/internal/procspy/domain/match.go (76.5%)</option>
+				
+				<option value="file9">procspy/internal/procspy/domain/target.go (91.2%)</option>
+				
+				<option value="file10">procspy/internal/procspy/handlers/command.go (4.2%)</option>
+				
+				<option value="file11">procspy/internal/procspy/handlers/healthcheck.go (100.0%)</option>
+				
+				<option value="file12">procspy/internal/procspy/handlers/match.go (4.2%)</option>
+				
+				<option value="file13">procspy/internal/procspy/handlers/report.go (5.0%)</option>
+				
+				<option value="file14">procspy/internal/procspy/handlers/target.go (4.8%)</option>
+				
+				<option value="file15">procspy/internal/procspy/handlers/util.go (100.0%)</option>
+				
+				<option value="file16">procspy/internal/procspy/server/server.go (35.6%)</option>
+				
+				<option value="file17">procspy/internal/procspy/service/command.go (69.2%)</option>
+				
+				<option value="file18">procspy/internal/procspy/service/match.go (59.1%)</option>
+				
+				<option value="file19">procspy/internal/procspy/service/target.go (18.8%)</option>
+				
+				<option value="file20">procspy/internal/procspy/service/user.go (100.0%)</option>
+				
+				<option value="file21">procspy/internal/procspy/storage/command.go (68.4%)</option>
+				
+				<option value="file22">procspy/internal/procspy/storage/dbconn.go (71.4%)</option>
+				
+				<option value="file23">procspy/internal/procspy/storage/match.go (69.0%)</option>
+				
+				<option value="file24">procspy/internal/procspy/watcher/watcher.go (4.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "fmt"
+        "log"
+        "os"
+        "os/signal"
+        "procspy/internal/procspy/client"
+        "procspy/internal/procspy/config"
+        "syscall"
+        "time"
+
+        rotatelogs "github.com/lestrrat/go-file-rotatelogs"
+)
+
+var buildDate string
+
+func main() <span class="cov0" title="0">{
+        if len(os.Args) &lt; 2 </span><span class="cov0" title="0">{
+                fmt.Print("Usage: procspy &lt;config_file&gt;\n")
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">configFile := os.Args[1]
+
+        cfg, err := config.ClientConfigFromFile(configFile)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error loading config file: %s", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = initLogger(cfg.LogPath)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error opening log file: %s, using stdout", err)
+                log.SetOutput(os.Stdout)
+        }</span>
+
+        <span class="cov0" title="0">PrintLogo()
+        fmt.Print("\nStarting client...\n")
+
+        service := client.NewSpy(cfg)
+        go service.Start()
+
+        quitChannel := make(chan os.Signal, 1)
+        signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quitChannel
+
+        service.Stop()
+
+        fmt.Print("\nClient stopped.\n")</span>
+}
+
+func initLogger(path string) error <span class="cov0" title="0">{
+        if err := os.Mkdir(path, 0755); !os.IsExist(err) </span><span class="cov0" title="0">{
+                fmt.Printf("Error creating directory %s: %s", path, err)
+                return err
+        }</span>
+
+        //rotate logs every day and store last 30 days
+        <span class="cov0" title="0">writer, err := rotatelogs.New(
+                fmt.Sprintf("%s/procspy-%%Y%%m%%d.log", path),
+                rotatelogs.WithLinkName(fmt.Sprintf("%s/procspy-latest.log", path)),
+                rotatelogs.WithMaxAge(30*24*time.Hour),
+                rotatelogs.WithRotationTime(24*time.Hour),
+        )
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Failed to Initialize Log File %s", err)
+                log.SetOutput(os.Stdout)
+        }</span> else<span class="cov0" title="0"> {
+                log.SetOutput(writer)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func PrintLogo() <span class="cov0" title="0">{
+        fmt.Printf(`
+ _____                                                          _____   _   _                  _    
+|  __ \                                                        / ____| | | (_)                | |   
+| |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | |      | |  _    ___   _ __   | |_  
+|  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______| | |      | | | |  / _ \ | '_ \  | __| 
+| |      | |    | (_) | | (__  \__ \ | |_) | | |_| |          | |____  | | | | |  __/ | | | | \ |_  
+|_|      |_|     \___/   \___| |___/ | .__/   \__, |           \_____| |_| |_|  \___| |_| |_|  \__| 
+                                     | |      __/ /                                                 
+                                     |_|     |___/                                                  
+Build Date: %s
+`, buildDate)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "fmt"
+        "log"
+        "os"
+        "os/signal"
+        "procspy/internal/procspy/config"
+        "procspy/internal/procspy/server"
+        "syscall"
+        "time"
+
+        rotatelogs "github.com/lestrrat/go-file-rotatelogs"
+)
+
+var buildDate string
+
+func main() <span class="cov0" title="0">{
+        if len(os.Args) &lt; 2 </span><span class="cov0" title="0">{
+                fmt.Print("Usage: procspy-server &lt;config_file&gt;\n")
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">configFile := os.Args[1]
+
+        cfg, err := config.ServerConfigFromFile(configFile)
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error loading config file: %s", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = initLogger(cfg.LogPath)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error opening log file: %s, using stdout", err)
+                log.SetOutput(os.Stdout)
+        }</span>
+
+        <span class="cov0" title="0">PrintLogo()
+        fmt.Printf("\nStarting...\n")
+
+        service := server.NewServer(cfg)
+        go service.Start()
+
+        quitChannel := make(chan os.Signal, 1)
+        signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quitChannel
+
+        log.Print("Stopping...\n")</span>
+}
+
+func initLogger(path string) error <span class="cov0" title="0">{
+        if err := os.Mkdir(path, 0755); !os.IsExist(err) </span><span class="cov0" title="0">{
+                fmt.Printf("Error creating directory %s: %s", path, err)
+                return err
+        }</span>
+
+        <span class="cov0" title="0">writer, err := rotatelogs.New(
+                fmt.Sprintf("%s/server-%s.log", path, "%Y%m%d"),
+                rotatelogs.WithMaxAge(24*time.Hour),
+                rotatelogs.WithRotationTime(time.Hour),
+                rotatelogs.WithRotationCount(30), //30 days
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to Initialize Log File %s", err)
+        }</span>
+        <span class="cov0" title="0">log.SetOutput(writer)
+
+        return nil</span>
+}
+
+func PrintLogo() <span class="cov0" title="0">{
+        fmt.Printf(`
+ _____                                                          _____                                      
+|  __ \                                                        / ____|                                     
+| |__) |  _ __    ___     ___   ___   _ __    _   _   ______  | (___     ___   _ __  __   __   ___   _ __  
+|  ___/  | '__|  / _ \   / __| / __| | '_ \  | | | | |______|  \___ \   / _ \ | '__| \ \ / /  / _ \ | '__| 
+| |      | |    | (_) | | (__  \__ \ | |_) | | |_| |           ____) | |  __/ | |     \ V /  |  __/ | |    
+|_|      |_|     \___/   \___| |___/ | .__/   \__, |          |_____/   \___| |_|      \_/    \___| |_|    
+                                                                         | |      __/ /                                                        
+                                                                         |_|     |___/                                                         
+Build Date: %s
+`, buildDate)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package main
+
+import (
+        "fmt"
+        "log"
+        "os"
+        "os/signal"
+        "procspy/internal/procspy/config"
+        "procspy/internal/procspy/watcher"
+        "syscall"
+        "time"
+
+        rotatelogs "github.com/lestrrat/go-file-rotatelogs"
+)
+
+var buildDate string
+
+func main() <span class="cov0" title="0">{
+        if len(os.Args) &lt; 2 </span><span class="cov0" title="0">{
+                fmt.Print("Usage: watcher &lt;config_file&gt;\n")
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">configFile := os.Args[1]
+
+        cfg, err := config.WatcherConfigFromFile(configFile)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error loading config file: %s", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">err = initLogger(cfg.LogPath)
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Error opening log file: %s, using stdout", err)
+                log.SetOutput(os.Stdout)
+        }</span>
+
+        <span class="cov0" title="0">PrintLogo()
+        fmt.Print("\nStarting watcher...\n")
+
+        service := watcher.NewWatcher(cfg)
+        go service.Start()
+
+        quitChannel := make(chan os.Signal, 1)
+        signal.Notify(quitChannel, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quitChannel
+
+        service.Stop()
+
+        fmt.Print("\nWatcher stopped.\n")</span>
+}
+
+func initLogger(path string) error <span class="cov0" title="0">{
+        if err := os.Mkdir(path, 0755); !os.IsExist(err) </span><span class="cov0" title="0">{
+                fmt.Printf("Error creating directory %s: %s", path, err)
+                return err
+        }</span>
+
+        //rotate logs every day and store last 30 days
+        <span class="cov0" title="0">writer, err := rotatelogs.New(
+                fmt.Sprintf("%s/watcher-%%Y%%m%%d.log", path),
+                rotatelogs.WithLinkName(fmt.Sprintf("%s/watcher-latest.log", path)),
+                rotatelogs.WithMaxAge(30*24*time.Hour),
+                rotatelogs.WithRotationTime(24*time.Hour),
+        )
+
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Failed to Initialize Log File %s", err)
+                log.SetOutput(os.Stdout)
+        }</span> else<span class="cov0" title="0"> {
+                log.SetOutput(writer)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func PrintLogo() <span class="cov0" title="0">{
+        fmt.Printf(`
+▄▖              ▖  ▖  ▗   ▌     
+▙▌▛▘▛▌▛▘▛▘▛▌▌▌▄▖▌▞▖▌▀▌▜▘▛▘▛▌█▌▛▘
+▌ ▌ ▙▌▙▖▄▌▙▌▙▌  ▛ ▝▌█▌▐▖▙▖▌▌▙▖▌ 
+          ▌ ▄▌                  
+Build Date: %s
+`, buildDate)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package client
+
+import (
+        "errors"
+        "fmt"
+        "io"
+        "log"
+        "math"
+        "net/http"
+        "os"
+        "os/exec"
+        "procspy/internal/procspy/config"
+        "procspy/internal/procspy/domain"
+        "procspy/internal/procspy/handlers"
+        "runtime"
+        "strings"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/mitchellh/go-ps"
+        _ "github.com/mitchellh/go-ps"
+)
+
+type Spy struct {
+        config             *config.Client
+        enabled            bool
+        currentDay         int
+        targets            *domain.TargetList
+        commandBuf         chan *domain.Command
+        matchBuf           chan *domain.Match
+        healthcheckHandler *handlers.Healthcheck
+        router             *gin.Engine
+        srv                *http.Server
+}
+
+func NewSpy(config *config.Client) *Spy <span class="cov5" title="2">{
+        ret := &amp;Spy{
+                config:             config,
+                enabled:            false,
+                currentDay:         time.Now().Day(),
+                targets:            domain.NewTargetList(),
+                commandBuf:         make(chan *domain.Command, 1000),
+                matchBuf:           make(chan *domain.Match, 1000),
+                healthcheckHandler: handlers.NewHealthcheck(),
+        }
+
+        return ret
+}</span>
+
+func (s *Spy) startHttpServer() <span class="cov0" title="0">{
+        gin.ForceConsoleColor()
+        gin.DefaultWriter = log.Writer()
+        gin.DefaultErrorWriter = log.Writer()
+        if s.config.Debug </span><span class="cov0" title="0">{
+                gin.SetMode(gin.DebugMode)
+        }</span> else<span class="cov0" title="0"> {
+                gin.SetMode(gin.ReleaseMode)
+        }</span>
+
+        <span class="cov0" title="0">s.router = gin.Default()
+        s.router.GET("/healthcheck", s.healthcheckHandler.GetStatus)
+
+        log.Print("[startHttpServer] Router started")
+
+        s.srv = &amp;http.Server{
+                Addr:    fmt.Sprintf("%s:%d", s.config.APIHost, s.config.APIPort),
+                Handler: s.router,
+        }
+
+        log.Printf("[startHttpServer] Server running under goroutine, listen and serve on %s:%d", s.config.APIHost, s.config.APIPort)
+        if err := s.srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
+                log.Printf("[startHttpServer] listen: %s\n", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Print("[startHttpServer] Server stopped")</span>
+}
+
+func (s *Spy) stopHttpServer() <span class="cov0" title="0">{
+        log.Printf("[stopHttpServer] Stopping http server...")
+        if s.srv != nil </span><span class="cov0" title="0">{
+                if err := s.srv.Close(); err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[stopHttpServer] Error stopping http server: %s", err)
+                }</span> else<span class="cov0" title="0"> {
+                        log.Printf("[stopHttpServer] Http server stopped")
+                }</span>
+        } else<span class="cov0" title="0"> {
+                log.Printf("[stopHttpServer] Http server is nil")
+        }</span>
+}
+
+func (s *Spy) httpGet(url string) (string, int, error) <span class="cov0" title="0">{
+        res, err := http.Get(url)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpGet] Error getting url: %s", err)
+                return "", http.StatusInternalServerError, err
+        }</span>
+
+        <span class="cov0" title="0">defer res.Body.Close()
+        body, err := io.ReadAll(res.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpGet] Error reading body: %s", err)
+                return "", res.StatusCode, err
+        }</span>
+
+        <span class="cov0" title="0">if s.config.Debug </span><span class="cov0" title="0">{
+                log.Printf("[httpGet] %d Response: %s", res.StatusCode, body)
+        }</span>
+
+        <span class="cov0" title="0">return string(body), res.StatusCode, nil</span>
+}
+
+func (s *Spy) httpPost(url string, data string) (string, int, error) <span class="cov0" title="0">{
+        res, err := http.Post(url, "application/json", strings.NewReader(data))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpPost] Error posting url: %s", err)
+                return "", http.StatusInternalServerError, err
+        }</span>
+
+        <span class="cov0" title="0">defer res.Body.Close()
+        body, err := io.ReadAll(res.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpPost] Error reading body: %s", err)
+                return "", res.StatusCode, err
+        }</span>
+
+        <span class="cov0" title="0">if s.config.Debug </span><span class="cov0" title="0">{
+                log.Printf("[httpPost] %d \nRequest: %s\nResponse: %s", res.StatusCode, data, body)
+        }</span>
+
+        <span class="cov0" title="0">return string(body), res.StatusCode, nil</span>
+}
+
+func (s *Spy) updateTargets() <span class="cov0" title="0">{
+        if s.targets == nil </span><span class="cov0" title="0">{
+                s.targets = domain.NewTargetList()
+        }</span>
+
+        <span class="cov0" title="0">targetUrl := fmt.Sprintf("%s/targets/%s", s.config.ServerURL, s.config.User)
+
+        data, status, err := s.httpGet(targetUrl)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[updateTargets] Error getting targets, http status code: %d from %s -&gt; error: %s", status, targetUrl, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">if status != http.StatusOK </span><span class="cov0" title="0">{
+                log.Printf("[updateTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
+                return
+        }</span>
+
+        <span class="cov0" title="0">targets, err := domain.TargetListFromJson(data)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[updateTargets] Error getting targets: %s -&gt; bad format", err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">if targets == nil </span><span class="cov0" title="0">{
+                log.Printf("[updateTargets] Error getting targets: nil")
+                return
+        }</span>
+
+        <span class="cov0" title="0">if len(targets.Targets) == 0 </span><span class="cov0" title="0">{
+                log.Printf("[updateTargets] No targets found")
+        }</span>
+
+        <span class="cov0" title="0">s.targets = targets</span>
+}
+
+func (s *Spy) postMatch(match *domain.Match) error <span class="cov0" title="0">{
+        if match == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("match is nil")
+        }</span>
+
+        <span class="cov0" title="0">matchUrl := fmt.Sprintf("%s/match/%s", s.config.ServerURL, s.config.User)
+
+        data, status, err := s.httpPost(matchUrl, match.ToJson())
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[postMatch] Error posting match, http status code: %d to %s -&gt; error: %s", status, matchUrl, err)
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if status != http.StatusCreated </span><span class="cov0" title="0">{
+                log.Printf("[postMatch] Error posting match, http status code: %d to %s", status, matchUrl)
+                return fmt.Errorf("http post match error, http status code: %d", status)
+        }</span>
+
+        <span class="cov0" title="0">if s.config.Debug </span><span class="cov0" title="0">{
+                log.Printf("[postMatch] Match POST return: %s\n from \n%s", data, match.ToJson())
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (s *Spy) postCommand(cmd *domain.Command) error <span class="cov0" title="0">{
+        if cmd == nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("command is nil")
+        }</span>
+
+        <span class="cov0" title="0">commandUrl := fmt.Sprintf("%s/command/%s", s.config.ServerURL, s.config.User)
+
+        data, status, err := s.httpPost(commandUrl, cmd.ToJson())
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[postCommand] Error posting command, http status code: %d to %s -&gt; error: %s", status, commandUrl, err)
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if status != http.StatusCreated </span><span class="cov0" title="0">{
+                log.Printf("[postCommand] Error posting command, http status code: %d to %s", status, commandUrl)
+                return fmt.Errorf("http post command error, http status code: %d", status)
+        }</span>
+
+        <span class="cov0" title="0">log.Printf("[postCommand] Command POST return: %s\nfrom \n%s", data, cmd.ToJson())
+
+        return nil</span>
+}
+
+func (s *Spy) consumeBuffers() <span class="cov0" title="0">{
+        if s.matchBuf == nil </span><span class="cov0" title="0">{
+                log.Printf("[Spy] Match buffer is nil")
+                s.matchBuf = make(chan *domain.Match, 1000)
+        }</span>
+
+        <span class="cov0" title="0">if s.commandBuf == nil </span><span class="cov0" title="0">{
+                log.Printf("[consumeBuffers] Command buffer is nil")
+                s.commandBuf = make(chan *domain.Command, 1000)
+        }</span>
+
+        <span class="cov0" title="0">go func() </span><span class="cov0" title="0">{
+                //Buffer
+                matchDlq := make(chan *domain.Match, len(s.matchBuf))
+                for len(s.matchBuf) &gt; 0 </span><span class="cov0" title="0">{
+                        if s.config.Debug </span><span class="cov0" title="0">{
+                                log.Printf("[consumeBuffers] %d matches in buffer", len(s.matchBuf))
+                        }</span>
+
+                        <span class="cov0" title="0">match := &lt;-s.matchBuf
+                        err := s.postMatch(match)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[consumeBuffers] Error posting match: %s, waiting for next process", err)
+                                matchDlq &lt;- match
+                        }</span>
+                }
+
+                <span class="cov0" title="0">cmdDlq := make(chan *domain.Command, len(s.commandBuf))
+                for len(s.commandBuf) &gt; 0 </span><span class="cov0" title="0">{
+                        if s.config.Debug </span><span class="cov0" title="0">{
+                                log.Printf("[consumeBuffers] %d commands in buffer", len(s.commandBuf))
+                        }</span>
+
+                        <span class="cov0" title="0">cmd := &lt;-s.commandBuf
+                        err := s.postCommand(cmd)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[consumeBuffers] Error posting command: %s, waiting for next process", err)
+                                cmdDlq &lt;- cmd
+                        }</span>
+                }
+
+                //DLQ
+                <span class="cov0" title="0">for len(matchDlq) &gt; 0 </span><span class="cov0" title="0">{
+                        match := &lt;-matchDlq
+                        log.Printf("[consumeBuffers] Add match to post dlq: %s", match.ToJson())
+                        s.matchBuf &lt;- match
+                }</span>
+
+                <span class="cov0" title="0">for len(cmdDlq) &gt; 0 </span><span class="cov0" title="0">{
+                        cmd := &lt;-cmdDlq
+                        log.Printf("[consumeBuffers] Add command to post dlq: %s", cmd.ToJson())
+                        s.commandBuf &lt;- cmd
+                }</span>
+        }()
+}
+
+func (s *Spy) run(last time.Time) error <span class="cov0" title="0">{
+        var startedAt = time.Now()
+        defer func() </span><span class="cov0" title="0">{
+                log.Printf("[run] Process scan finished on %s", time.Since(startedAt).String())
+        }</span>()
+
+        <span class="cov0" title="0">elapsed := roundFloat(time.Since(last).Seconds(), 2)
+
+        defer s.consumeBuffers()
+        s.updateTargets()
+
+        processes, err := ps.Processes()
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[run] Error getting processes: %s", err)
+                return err
+        }</span>
+
+        <span class="cov0" title="0">for _, target := range s.targets.Targets </span><span class="cov0" title="0">{
+                match := false
+                pids := make([]int, 0)
+                names := make(map[string]struct{})
+
+                for _, proc := range processes </span><span class="cov0" title="0">{
+                        name := proc.Executable()
+
+                        if target.Match(name) </span><span class="cov0" title="0">{
+                                pid := proc.Pid()
+                                match = true
+                                pids = append(pids, pid)
+                                names[name] = struct{}{}
+                        }</span>
+                }
+
+                <span class="cov0" title="0">if len(target.CheckCommand) &gt; 0 </span><span class="cov0" title="0">{
+                        log.Printf("[run]  &gt; [%s] Use %.2f from %.2fs", target.Name, target.Elapsed, target.Limit)
+                        cmdLog, err := executeCommand(target.CheckCommand)
+
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[run]  &gt; [%s] Error executing check command [%s]: %s -&gt; %s", target.Name, target.CheckCommand, err, cmdLog)
+                        }</span> else<span class="cov0" title="0"> {
+                                log.Printf("[run]  &gt; [%s] Check command [%s] -&gt; %s", target.Name, target.CheckCommand, cmdLog)
+                        }</span>
+
+                        <span class="cov0" title="0">cmd := domain.NewCommand(s.config.User, target.Name, target.LimitCommand, cmdLog)
+                        cmd.Source = "Check"
+                        s.commandBuf &lt;- cmd</span>
+                }
+
+                <span class="cov0" title="0">if match </span><span class="cov0" title="0">{
+                        log.Printf("[run]  &gt; [%s] Found %d processes: %v", target.Name, len(pids), pids)
+
+                        matches := make([]string, 0)
+                        for k := range names </span><span class="cov0" title="0">{
+                                matches = append(matches, k)
+                        }</span>
+
+                        <span class="cov0" title="0">strMatches := strings.Join(matches, " / ")
+
+                        log.Printf("[run]  &gt; [%s] Match process with pattern %s (%s) -&gt; %v", target.Name, target.Pattern, matches, pids)
+                        s.matchBuf &lt;- domain.NewMatch(s.config.User, target.Name, target.Pattern, strMatches, elapsed)
+
+                        target.AddElapsed(elapsed)
+                        log.Printf("[run]  &gt; [%s] Add %.2fs -&gt; Use %.2f from %.2fs", target.Name, elapsed, target.Elapsed, target.Limit)
+
+                        if target.CheckLimit() </span><span class="cov0" title="0">{
+                                log.Printf("[run]  &gt;&gt; [%s] Exceeded limit of %.2f seconds", target.Name, target.Limit)
+
+                                if len(target.LimitCommand) &gt; 0 </span><span class="cov0" title="0">{
+                                        cmdLog, err := executeCommand(target.LimitCommand)
+
+                                        if err != nil </span><span class="cov0" title="0">{
+                                                log.Printf("[run]  &gt;&gt; [%s] Error executing limit command [%s]: %s -&gt; %s", target.Name, target.LimitCommand, err, cmdLog)
+                                        }</span> else<span class="cov0" title="0"> {
+                                                log.Printf("[run]  &gt;&gt; [%s] Limit command [%s] -&gt; %s", target.Name, target.LimitCommand, cmdLog)
+                                        }</span>
+
+                                        <span class="cov0" title="0">cmd := domain.NewCommand(s.config.User, target.Name, target.LimitCommand, cmdLog)
+                                        cmd.Source = "Limit"
+                                        s.commandBuf &lt;- cmd</span>
+                                }
+
+                                <span class="cov0" title="0">if target.Kill </span><span class="cov0" title="0">{
+                                        log.Printf("[run]  &gt;&gt; [%s] Killing processes: %v", target.Name, pids)
+                                        s.kill(target.Name, strMatches, pids)
+                                        log.Printf("[run]  &gt;&gt; [%s] %d processes terminated", target.Name, len(pids))
+                                }</span>
+                        } else<span class="cov0" title="0"> {
+                                if target.CheckWarning() </span><span class="cov0" title="0">{
+                                        log.Printf("[run]  &gt;&gt; [%s] Warning on %.2f seconds", target.Name, target.WarningOn)
+
+                                        if len(target.WarningCommand) &gt; 0 </span><span class="cov0" title="0">{
+                                                cmdLog, err := executeCommand(target.WarningCommand)
+
+                                                if err != nil </span><span class="cov0" title="0">{
+                                                        log.Printf("[run]  &gt;&gt; [%s] Error executing warning command [%s]: %s -&gt; %s", target.Name, target.WarningCommand, err, cmdLog)
+                                                }</span> else<span class="cov0" title="0"> {
+                                                        log.Printf("[run]  &gt;&gt; [%s] Warning command [%s] -&gt; %s", target.Name, target.WarningCommand, cmdLog)
+                                                }</span>
+
+                                                <span class="cov0" title="0">cmd := domain.NewCommand(s.config.User, target.Name, target.WarningCommand, cmdLog)
+                                                cmd.Source = "Warning"
+                                                s.commandBuf &lt;- cmd</span>
+                                        }
+                                }
+                        }
+                }
+        }
+
+        <span class="cov0" title="0">return err</span>
+}
+
+func (s *Spy) kill(name string, pattern string, pids []int) <span class="cov0" title="0">{
+        if len(pids) == 0 </span><span class="cov0" title="0">{
+                return
+        }</span>
+
+        <span class="cov0" title="0">for _, pid := range pids </span><span class="cov0" title="0">{
+                p, err := os.FindProcess(pid)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[kill]  &gt;&gt; Process %d not found: %s", pid, err)
+                }</span> else<span class="cov0" title="0"> {
+                        err = p.Kill()
+                        msg := "Process Killed"
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[kill]  &gt;&gt; Warn: killing process %d: %s", pid, err)
+                                msg = err.Error()
+                        }</span>
+
+                        <span class="cov0" title="0">cmd := domain.NewCommand(s.config.User, name, fmt.Sprintf("PID %d from %s", pid, pattern), msg)
+                        cmd.Source = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+                        s.commandBuf &lt;- cmd</span>
+                }
+        }
+}
+
+func (s *Spy) Start() <span class="cov0" title="0">{
+        last := time.Now().Add(-time.Duration(s.config.Interval) * time.Second)
+
+        go s.startHttpServer()
+
+        s.enabled = true
+
+        log.Printf("[Start] Starting with config -&gt;\n%s", s.config.ToJson())
+
+        for s.enabled </span><span class="cov0" title="0">{
+                s.run(last)
+                last = time.Now()
+                time.Sleep(time.Duration(s.config.Interval) * time.Second)
+        }</span>
+}
+
+func (s *Spy) Stop() <span class="cov0" title="0">{
+        s.enabled = false
+        s.stopHttpServer()
+        log.Printf("[Stop] Stopping...")
+}</span>
+
+func (s *Spy) IsEnabled() bool <span class="cov5" title="2">{
+        return s.enabled
+}</span>
+
+func roundFloat(val float64, precision uint) float64 <span class="cov10" title="4">{
+        ratio := math.Pow(10, float64(precision))
+        return math.Round(val*ratio) / ratio
+}</span>
+
+func executeCommand(command string) (string, error) <span class="cov0" title="0">{
+        cmd := exec.Command(command)
+
+        log.Printf("[executeCommand] Executing command: %s", command)
+        err := cmd.Run()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[executeCommand] Error executing command: %s -&gt; %s", command, err)
+        }</span>
+
+        <span class="cov0" title="0">buf, err := cmd.Output()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[executeCommand] Error to read command output: %s -&gt; %s", command, err)
+        }</span>
+
+        <span class="cov0" title="0">return string(buf), err</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package config
+
+import (
+        "encoding/json"
+        "log"
+        "os"
+)
+
+type Client struct {
+        Interval  int    `json:"interval"`
+        LogPath   string `json:"log_path"`
+        ServerURL string `json:"server_url"`
+        User      string `json:"user"`
+        Debug     bool   `json:"debug,omitempty"`
+        APIPort   int    `json:"api_port,omitempty"`
+        APIHost   string `json:"api_host,omitempty"`
+}
+
+func NewConfig() *Client <span class="cov1" title="1">{
+        return &amp;Client{
+                Interval: 30,
+                LogPath:  "logs",
+                Debug:    false,
+                APIPort:  8888,
+                APIHost:  "localhost",
+        }
+}</span>
+
+func (c *Client) SetDefaults() <span class="cov10" title="8">{
+        if c.Interval &lt; 30 </span><span class="cov7" title="4">{
+                c.Interval = 30
+        }</span>
+
+        <span class="cov10" title="8">if c.LogPath == "" </span><span class="cov5" title="3">{
+                c.LogPath = "logs"
+        }</span>
+
+        <span class="cov10" title="8">if c.APIPort == 0 </span><span class="cov7" title="4">{
+                c.APIPort = 8888
+        }</span>
+
+        <span class="cov10" title="8">if c.APIHost == "" </span><span class="cov7" title="4">{
+                c.APIHost = "localhost"
+        }</span>
+}
+
+func (c *Client) ToJson() string <span class="cov10" title="8">{
+        ret, err := json.MarshalIndent(c, "", "\t")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[Client] Error marshalling config: %s", err)
+        }</span>
+
+        <span class="cov10" title="8">return string(ret)</span>
+}
+
+func ClientConfigFromJson(jsonString string) (*Client, error) <span class="cov9" title="7">{
+        ret := &amp;Client{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov4" title="2">{
+                log.Printf("[Client] Error unmarshalling config: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov7" title="5">ret.SetDefaults()
+
+        log.Printf("Client config: %s", ret.ToJson())
+
+        return ret, nil</span>
+}
+
+func ClientConfigFromFile(path string) (*Client, error) <span class="cov5" title="3">{
+        byteValue, err := os.ReadFile(path)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("Error reading file: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov4" title="2">return ClientConfigFromJson(string(byteValue))</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package config
+
+import (
+        "encoding/json"
+        "log"
+        "os"
+)
+
+type Server struct {
+        DBPath     string            `json:"db_path"`
+        LogPath    string            `json:"log_path"`
+        APIPort    int               `json:"api_port"`
+        APIHost    string            `json:"api_host"`
+        UserTarges map[string]string `json:"user_targets"`
+        Debug      bool              `json:"debug"`
+}
+
+func NewServer() *Server <span class="cov1" title="1">{
+        return &amp;Server{}
+}</span>
+
+func (s *Server) ToJson() string <span class="cov10" title="3">{
+        ret, err := json.MarshalIndent(s, "", "\t")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("Error marshalling target: %s", err)
+        }</span>
+
+        <span class="cov10" title="3">return string(ret)</span>
+}
+
+func ServerConfigFromJson(jsonString string) (*Server, error) <span class="cov10" title="3">{
+        ret := &amp;Server{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("Error unmarshalling target: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov6" title="2">log.Printf("Server config: %s", ret.ToJson())
+
+        return ret, nil</span>
+}
+
+func ServerConfigFromFile(path string) (*Server, error) <span class="cov6" title="2">{
+        byteValue, err := os.ReadFile(path)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("Error reading file: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return ServerConfigFromJson(string(byteValue))</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package config
+
+import (
+        "encoding/json"
+        "log"
+        "os"
+)
+
+type Watcher struct {
+        Interval   int    `json:"interval"`
+        LogPath    string `json:"log_path"`
+        ProcspyURL string `json:"procspy_url"`
+        StartCmd   string `json:"start_cmd"`
+}
+
+func NewWatcher() *Watcher <span class="cov1" title="1">{
+        return &amp;Watcher{
+                Interval:   10,
+                LogPath:    "logs",
+                ProcspyURL: "http://localhost:8888",
+                StartCmd:   "",
+        }
+}</span>
+
+func (w *Watcher) SetDefaults() <span class="cov10" title="5">{
+        if w.Interval &lt; 10 </span><span class="cov4" title="2">{
+                w.Interval = 10
+        }</span>
+
+        <span class="cov10" title="5">if w.LogPath == "" </span><span class="cov4" title="2">{
+                w.LogPath = "logs"
+        }</span>
+
+        <span class="cov10" title="5">if w.ProcspyURL == "" </span><span class="cov1" title="1">{
+                w.ProcspyURL = "http://localhost:8888"
+        }</span>
+}
+
+func (w *Watcher) ToJson() string <span class="cov7" title="3">{
+        ret, err := json.MarshalIndent(w, "", "\t")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[watcher] Error marshalling config: %s", err)
+        }</span>
+
+        <span class="cov7" title="3">return string(ret)</span>
+}
+
+func WatcherConfigFromJson(jsonString string) (*Watcher, error) <span class="cov7" title="3">{
+        ret := &amp;Watcher{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("[watcher] Error unmarshalling config: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov4" title="2">ret.SetDefaults()
+
+        log.Printf("Watcher config: %s", ret.ToJson())
+
+        return ret, nil</span>
+}
+
+func WatcherConfigFromFile(path string) (*Watcher, error) <span class="cov4" title="2">{
+        byteValue, err := os.ReadFile(path)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("Error reading file: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return WatcherConfigFromJson(string(byteValue))</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package domain
+
+import (
+        "encoding/json"
+        "log"
+        "time"
+)
+
+type Command struct {
+        User        string    `json:"user"`
+        Name        string    `json:"name"`
+        CommandLine string    `json:"command_line"`
+        Return      string    `json:"command_return"`
+        Source      string    `json:"source"`
+        CommandLog  string    `json:"command_log"`
+        CreatedAt   time.Time `json:"created_at,omitempty"`
+}
+
+func NewCommand(user string, name string, commandLine string, commandReturn string) *Command <span class="cov10" title="13">{
+        return &amp;Command{
+                User:        user,
+                Name:        name,
+                CommandLine: commandLine,
+                Return:      commandReturn,
+                Source:      "procspy",
+                CommandLog:  "",
+                CreatedAt:   time.Now(),
+        }
+}</span>
+
+func (c *Command) ToLog() string <span class="cov3" title="2">{
+        ret, err := json.Marshal(c)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Command] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov3" title="2">return string(ret)</span>
+}
+func (c *Command) ToJson() string <span class="cov7" title="6">{
+        ret, err := json.MarshalIndent(c, "", "  ")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Command] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov7" title="6">return string(ret)</span>
+}
+
+func CommandFromJson(jsonString string) (*Command, error) <span class="cov8" title="8">{
+        ret := &amp;Command{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov3" title="2">{
+                log.Printf("[domain.Command] Error parsing json: %s", err)
+                return nil, err
+        }</span>
+        <span class="cov7" title="6">return ret, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package domain
+
+import (
+        "encoding/json"
+        "log"
+        "time"
+)
+
+type Match struct {
+        User       string    `json:"user"`
+        Name       string    `json:"name"`
+        Pattern    string    `json:"pattern"`
+        Match      string    `json:"match"`
+        Elapsed    float64   `json:"elapsed"`
+        CreatedAt  time.Time `json:"created_at,omitempty"`
+        FirstMatch string    `json:"first_match,omitempty"`
+        LastMatch  string    `json:"last_match,omitempty"`
+        Ocurrences int       `json:"ocurrences,omitempty"`
+}
+
+type MatchList struct {
+        Matches map[string]float64 `json:"matches"`
+}
+
+type MatchInfo struct {
+        Elapsed    float64 `json:"elapsed"`
+        FirstMatch string  `json:"first_match"`
+        LastMatch  string  `json:"last_match"`
+        Ocurrences int     `json:"ocurrences"`
+}
+
+func NewMatch(user string, name string, pattern string, match string, elapsed float64) *Match <span class="cov10" title="6">{
+        ret := &amp;Match{
+                User:      user,
+                Name:      name,
+                Pattern:   pattern,
+                Match:     match,
+                Elapsed:   elapsed,
+                CreatedAt: time.Now(),
+        }
+
+        return ret
+}</span>
+
+func (m *Match) ToLog() string <span class="cov1" title="1">{
+        ret, err := json.Marshal(m)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov1" title="1">return string(ret)</span>
+}
+
+func (m *Match) ToJson() string <span class="cov7" title="4">{
+        ret, err := json.MarshalIndent(m, "", "  ")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov7" title="4">return string(ret)</span>
+}
+
+func MatchFromJson(jsonString string) (*Match, error) <span class="cov10" title="6">{
+        ret := &amp;Match{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov4" title="2">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov7" title="4">return ret, nil</span>
+}
+
+func MatchListFromJson(jsonString string) (*MatchList, error) <span class="cov9" title="5">{
+        ret := &amp;MatchList{}
+        err := json.Unmarshal([]byte(jsonString), &amp;ret)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return nil, err
+        }</span>
+        <span class="cov7" title="4">return ret, nil</span>
+}
+
+func (m *MatchInfo) ToJson() string <span class="cov4" title="2">{
+        ret, err := json.MarshalIndent(m, "", "  ")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov4" title="2">return string(ret)</span>
+}
+
+func (m *MatchInfo) ToLog() string <span class="cov4" title="2">{
+        ret, err := json.Marshal(m)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Match] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov4" title="2">return string(ret)</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package domain
+
+import (
+        "encoding/json"
+        "fmt"
+        "log"
+        "regexp"
+        "time"
+)
+
+const DEFAULT_WEEKDAY_LIMIT = 0.5
+const DEFAULT_WEEKEND_LIMIT = 1.0
+const DEFAULT_BASE_LIMIT = 60 * 60
+const DEFAULT_WARNING_ON = 0.95
+
+type Target struct {
+        User           string          `json:"user"`
+        Name           string          `json:"name"`
+        Pattern        string          `json:"pattern"`
+        Source         string          `json:"source,omitempty"`
+        Limit          float64         `json:"limit"`
+        Elapsed        float64         `json:"elapsed,omitempty"`
+        Remaining      float64         `json:"remaining"`
+        Ocurrences     int             `json:"ocurrences,omitempty"`
+        FirstMatch     string          `json:"first_match,omitempty"`
+        LastMatch      string          `json:"last_match,omitempty"`
+        Kill           bool            `json:"kill"`
+        LimitCommand   string          `json:"limit_command,omitempty"`
+        CheckCommand   string          `json:"check_command,omitempty"`
+        WarningCommand string          `json:"warning_command,omitempty"`
+        WarningOn      float64         `json:"warning_on,omitempty"`
+        Weekdays       map[int]float64 `json:"weekdays,omitempty"`
+        rgx            *regexp.Regexp
+}
+
+func (t *Target) setWeekdays() <span class="cov5" title="5">{
+        if t.Weekdays == nil </span><span class="cov4" title="4">{
+                t.Weekdays = map[int]float64{}
+        }</span>
+
+        <span class="cov5" title="5">for i := range 7 </span><span class="cov10" title="35">{
+                if _, found := t.Weekdays[i]; !found </span><span class="cov9" title="33">{
+                        if i == 0 || i == 6 </span><span class="cov6" title="9">{
+                                t.Weekdays[i] = DEFAULT_WEEKEND_LIMIT
+                        }</span> else<span class="cov9" title="24"> {
+                                t.Weekdays[i] = DEFAULT_WEEKDAY_LIMIT
+                        }</span>
+                }
+        }
+}
+
+func (t *Target) ToLog() string <span class="cov1" title="1">{
+        ret, err := json.Marshal(t)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Target] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov1" title="1">return string(ret)</span>
+}
+func (t *Target) ToJson() string <span class="cov1" title="1">{
+        ret, err := json.MarshalIndent(t, "", "\t")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.Target] Error parsing json: %s", err)
+        }</span>
+
+        <span class="cov1" title="1">return string(ret)</span>
+}
+
+type TargetList struct {
+        Targets []*Target `json:"targets"`
+}
+
+func NewTargetList() *TargetList <span class="cov1" title="1">{
+        return &amp;TargetList{
+                Targets: []*Target{},
+        }
+}</span>
+
+func TargetListFromJson(jsonString string) (*TargetList, error) <span class="cov5" title="5">{
+        ret := &amp;TargetList{}
+        err := json.Unmarshal([]byte(jsonString), ret)
+        if err != nil </span><span class="cov1" title="1">{
+                log.Printf("[domain.Target] Error parsing json: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov4" title="4">for _, v := range ret.Targets </span><span class="cov3" title="3">{
+                v.setWeekdays()
+                v.getLimit()
+        }</span>
+
+        <span class="cov4" title="4">return ret, nil</span>
+}
+
+func (t *TargetList) ToLog() string <span class="cov1" title="1">{
+        ret, err := json.MarshalIndent(t, "", "\t")
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[domain.TargetList] Error parsing json: %s", err)
+                return ""
+        }</span>
+        <span class="cov1" title="1">return string(ret)</span>
+}
+
+func (t *TargetList) Hash() string <span class="cov2" title="2">{
+        ret := ""
+        for _, v := range t.Targets </span><span class="cov2" title="2">{
+                ret += fmt.Sprintf("%s %s %s %f %f %t %s %s %s %s", v.User, v.Name, v.Pattern, v.getLimit(), v.getWarningOn(), v.Kill, v.Source, v.CheckCommand, v.WarningCommand, v.LimitCommand)
+        }</span>
+        <span class="cov2" title="2">return ret</span>
+}
+
+func (t *Target) Match(value string) bool <span class="cov5" title="7">{
+        if t.rgx == nil </span><span class="cov5" title="7">{
+                t.rgx = regexp.MustCompile(t.Pattern)
+        }</span>
+
+        <span class="cov5" title="7">ret := t.rgx.MatchString(value)
+
+        return ret</span>
+}
+
+func (t *Target) AddMatchInfo(info *MatchInfo) <span class="cov1" title="1">{
+        t.Elapsed += info.Elapsed
+        t.FirstMatch = info.FirstMatch
+        t.LastMatch = info.LastMatch
+        t.Ocurrences = info.Ocurrences
+        t.Remaining = t.getLimit() - t.Elapsed
+}</span>
+
+func (t *Target) AddElapsed(elapsed float64) <span class="cov2" title="2">{
+        t.Elapsed += elapsed
+        t.Remaining = t.getLimit() - t.Elapsed
+}</span>
+
+func (t *Target) SetElapsed(elapsed float64) <span class="cov1" title="1">{
+        t.Elapsed = elapsed
+        t.Remaining = t.getLimit() - elapsed
+}</span>
+
+func (t *Target) ResetElapsed() <span class="cov1" title="1">{
+        t.Elapsed = 0
+        t.Remaining = t.getLimit()
+}</span>
+
+func (t *Target) CheckLimit() bool <span class="cov4" title="4">{
+        limit := t.getLimit()
+        if limit == 0 </span><span class="cov1" title="1">{
+                return false
+        }</span>
+
+        <span class="cov3" title="3">return t.Elapsed &gt;= limit</span>
+}
+
+func (t *Target) CheckWarning() bool <span class="cov3" title="3">{
+        warn := t.getWarningOn()
+        if warn == 0 </span><span class="cov0" title="0">{
+                return false
+        }</span>
+
+        <span class="cov3" title="3">return t.Elapsed &gt; warn</span>
+}
+
+func (t *Target) getLimit() float64 <span class="cov8" title="19">{
+        today := int(time.Now().Weekday())
+
+        factor, found := t.Weekdays[today]
+
+        if !found </span><span class="cov4" title="4">{
+                factor = DEFAULT_WEEKDAY_LIMIT
+        }</span>
+
+        <span class="cov8" title="19">t.Limit = DEFAULT_BASE_LIMIT * factor
+        if t.Remaining &lt;= 0 </span><span class="cov8" title="16">{
+                t.Remaining = t.Limit
+        }</span>
+
+        <span class="cov8" title="19">return t.Limit</span>
+}
+
+func (t *Target) getWarningOn() float64 <span class="cov5" title="5">{
+        t.WarningOn = t.getLimit() * DEFAULT_WARNING_ON
+        return t.WarningOn
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package handlers
+
+import (
+        "log"
+        "net/http"
+        "procspy/internal/procspy/domain"
+        "procspy/internal/procspy/service"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Command struct {
+        service *service.Command
+        users   *service.Users
+}
+
+func NewCommand(commandService *service.Command, usersService *service.Users) *Command <span class="cov8" title="1">{
+        return &amp;Command{
+                service: commandService,
+                users:   usersService,
+        }
+}</span>
+
+func (c *Command) InsertCommand(ctx *gin.Context) <span class="cov0" title="0">{
+        start := time.Now()
+        user, err := ValidateUser(c.users, ctx)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Command] [%s] InsertCommand -&gt; Error validating user: %s", user, err)
+                ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
+                        "error":     "user not found",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">body, err := ctx.GetRawData()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Command] [%s] InsertCommand -&gt; Error getting raw data: %s", user, err)
+                ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+                        "error":     "invalid json",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">cmd, err := domain.CommandFromJson(string(body))
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Command] [%s] InsertCommand -&gt; Error binding json: %s", user, err)
+                ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+                        "error":     "invalid json",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+
+                return
+        }</span>
+
+        <span class="cov0" title="0">err = c.service.InsertCommand(cmd)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Command] [%s] InsertCommand -&gt; Error inserting command: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">log.Printf("[handler.Command] [%s] InsertCommand -&gt; Command inserted: %s", user, cmd.ToLog())
+
+        ctx.IndentedJSON(http.StatusCreated, gin.H{
+                "message":   "command inserted",
+                "elapsed":   time.Since(start).Milliseconds(),
+                "timestamp": time.Now().Format(time.RFC3339),
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package handlers
+
+import (
+        "log"
+        "net/http"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Healthcheck struct {
+        startTime time.Time
+}
+
+func NewHealthcheck() *Healthcheck <span class="cov10" title="2">{
+        return &amp;Healthcheck{
+                startTime: time.Now(),
+        }
+}</span>
+
+func (h *Healthcheck) GetStatus(ctx *gin.Context) <span class="cov1" title="1">{
+        log.Printf("[handler.Healthcheck] Status check OK")
+        ctx.IndentedJSON(http.StatusOK, gin.H{
+                "elapsed":   time.Since(h.startTime).Milliseconds(),
+                "timestamp": time.Now().Format(time.RFC3339),
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package handlers
+
+import (
+        "log"
+        "net/http"
+        "procspy/internal/procspy/domain"
+        "procspy/internal/procspy/service"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Match struct {
+        service *service.Match
+        users   *service.Users
+}
+
+func NewMatch(matchService *service.Match, usersService *service.Users) *Match <span class="cov8" title="1">{
+        return &amp;Match{
+                users:   usersService,
+                service: matchService,
+        }
+}</span>
+
+func (m *Match) InsertMatch(ctx *gin.Context) <span class="cov0" title="0">{
+        start := time.Now()
+        user, err := ValidateUser(m.users, ctx)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Match] [%s] InsertMatch -&gt; Error validating user: %s", user, err)
+                ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
+                        "error":     "user not found",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">body, err := ctx.GetRawData()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Match] [%s] InsertMatch -&gt; Error getting raw data: %s", user, err)
+                ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+                        "error":     "invalid json",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">match, err := domain.MatchFromJson(string(body))
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Match] [%s] InsertMatch -&gt; Error binding json: %s", user, err)
+                ctx.IndentedJSON(http.StatusBadRequest, gin.H{
+                        "error":     "invalid json",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+
+                return
+        }</span>
+
+        <span class="cov0" title="0">err = m.service.InsertMatch(match)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Match] [%s] InsertMatch -&gt; Error inserting match: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">log.Printf("[handler.Match] [%s] InsertMatch -&gt; Match Inserted: %s", user, match.ToLog())
+
+        ctx.IndentedJSON(http.StatusCreated, gin.H{
+                "message":   "match inserted",
+                "elapsed":   time.Since(start).Milliseconds(),
+                "timestamp": time.Now().Format(time.RFC3339),
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package handlers
+
+import (
+        "html"
+        "log"
+        "net/http"
+        "procspy/internal/procspy/service"
+        "strconv"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Report struct {
+        service  *service.Target
+        users    *service.Users
+        matches  *service.Match
+        commands *service.Command
+}
+
+func NewReport(targetService *service.Target, usersService *service.Users, matches *service.Match, commandsService *service.Command) *Report <span class="cov1" title="1">{
+        return &amp;Report{
+                service:  targetService,
+                users:    usersService,
+                matches:  matches,
+                commands: commandsService,
+        }
+}</span>
+
+func (r *Report) GetReport(ctx *gin.Context) <span class="cov0" title="0">{
+        start := time.Now()
+        user, err := ValidateUser(r.users, ctx)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Report] [%s] GetReport -&gt; Error validating user: %s", user, err)
+                ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
+                        "error":     "user not found",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">targets, err := r.service.GetTargets(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Report] [%s] GetReport -&gt; Error getting targets: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">matches, err := r.matches.GetMatchesInfo(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Report] [%s] GetReport -&gt; Error getting matches info: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">commands, err := r.commands.GetCommands(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Report] [%s] GetReport -&gt; Error getting commands: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">for _, target := range targets.Targets </span><span class="cov0" title="0">{
+                if info, ok := matches[target.Name]; ok </span><span class="cov0" title="0">{
+                        target.AddMatchInfo(info)
+                }</span>
+        }
+        <span class="cov0" title="0">htmlContent := `                 
+&lt;html&gt;
+&lt;head&gt;
+&lt;style&gt;
+table {
+  font-family: "Noto Sans Mono", monospace;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;h1 font-family: monospace;&gt;Procspy Report: ` + user + `&lt;/h1&gt;
+&lt;h2&gt;Targets&lt;/h2&gt;
+&lt;table&gt;
+&lt;tr&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Limit&lt;/th&gt;&lt;th&gt;Elapsed&lt;/th&gt;&lt;th&gt;Remaining&lt;/th&gt;&lt;th&gt;First&lt;/th&gt;&lt;th&gt;Last&lt;/th&gt;
+&lt;th&gt;Sun&lt;/th&gt;
+&lt;th&gt;Mon&lt;/th&gt;
+&lt;th&gt;Tue&lt;/th&gt;
+&lt;th&gt;Wed&lt;/th&gt;
+&lt;th&gt;Thu&lt;/th&gt;
+&lt;th&gt;Fri&lt;/th&gt;
+&lt;th&gt;Sat&lt;/th&gt;
+&lt;th&gt;Kill&lt;/th&gt;&lt;/tr&gt;`
+        for _, target := range targets.Targets </span><span class="cov0" title="0">{
+                htmlContent += "&lt;tr&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(target.Name) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Limit, time.Second)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Elapsed, time.Second)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Remaining, time.Second)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(target.FirstMatch) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(target.LastMatch) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[0], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[1], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[2], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[3], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[4], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[5], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(FormatInterval(target.Weekdays[6], time.Hour)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + strconv.FormatBool(target.Kill) + "&lt;/td&gt;&lt;/tr&gt;"
+        }</span>
+        <span class="cov0" title="0">htmlContent += "&lt;/table&gt;&lt;br&gt;"
+        htmlContent += "&lt;br&gt;&lt;h2&gt;Commands&lt;/h2&gt;"
+        htmlContent += "&lt;table&gt;"
+        htmlContent += "&lt;tr&gt;&lt;th&gt;Created At&lt;/th&gt;&lt;th&gt;Name&lt;/th&gt;&lt;th&gt;Command&lt;/th&gt;&lt;th&gt;Return&lt;/th&gt;&lt;th&gt;Source&lt;/th&gt;&lt;th&gt;Log&lt;/th&gt;&lt;/tr&gt;"
+        for _, cmd := range commands </span><span class="cov0" title="0">{
+                htmlContent += "&lt;tr&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.CreatedAt.Format(time.RFC3339)) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.Name) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.CommandLine) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.Return) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.Source) + "&lt;/td&gt;"
+                htmlContent += "&lt;td&gt;" + html.EscapeString(cmd.CommandLog) + "&lt;/td&gt;"
+                htmlContent += "&lt;/tr&gt;"
+        }</span>
+        <span class="cov0" title="0">htmlContent += "&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;"
+
+        ctx.Header("Content-Length", strconv.Itoa(len(htmlContent)))
+        ctx.Data(http.StatusOK, "text/html", []byte(htmlContent))</span>
+}
+
+func FormatInterval(seconds float64, scale time.Duration) string <span class="cov10" title="3">{
+        d := time.Duration(seconds * float64(scale))
+        return d.String()
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package handlers
+
+import (
+        "log"
+        "net/http"
+        "procspy/internal/procspy/service"
+        "time"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Target struct {
+        service *service.Target
+        users   *service.Users
+        matches *service.Match
+}
+
+func NewTarget(targetService *service.Target, usersService *service.Users, matches *service.Match) *Target <span class="cov8" title="1">{
+        return &amp;Target{
+                service: targetService,
+                users:   usersService,
+                matches: matches,
+        }
+}</span>
+
+func (t *Target) GetTargets(ctx *gin.Context) <span class="cov0" title="0">{
+        start := time.Now()
+        user, err := ValidateUser(t.users, ctx)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Target] [%s] GetTargets -&gt; Error validating user: %s", user, err)
+                ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
+                        "error":     "user not found",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">targets, err := t.service.GetTargets(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Target] [%s] GetTargets -&gt; Error getting targets: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">matches, err := t.matches.GetMatchesInfo(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[handler.Target] [%s] GetTargets -&gt; Error getting matches info: %s", user, err)
+                ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+                        "error":     "internal error",
+                        "elapsed":   time.Since(start).Milliseconds(),
+                        "timestamp": time.Now().Format(time.RFC3339),
+                })
+                return
+        }</span>
+
+        <span class="cov0" title="0">for _, target := range targets.Targets </span><span class="cov0" title="0">{
+                if info, ok := matches[target.Name]; ok </span><span class="cov0" title="0">{
+                        target.AddMatchInfo(info)
+                }</span>
+        }
+
+        <span class="cov0" title="0">ctx.IndentedJSON(http.StatusOK, gin.H{
+                "targets":   targets.Targets,
+                "elapsed":   time.Since(start).Milliseconds(),
+                "timestamp": time.Now().Format(time.RFC3339),
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package handlers
+
+import (
+        "errors"
+        "log"
+        "procspy/internal/procspy/service"
+
+        "github.com/gin-gonic/gin"
+)
+
+func ValidateUser(users *service.Users, ctx *gin.Context) (string, error) <span class="cov10" title="2">{
+        userName := ctx.Param("user")
+
+        if !users.Exists(userName) </span><span class="cov1" title="1">{
+                log.Printf("[handler.util] ValidateUser -&gt; User %s not found", userName)
+                return userName, errors.New("user not found")
+        }</span>
+
+        <span class="cov1" title="1">return userName, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package server
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "procspy/internal/procspy/config"
+        "procspy/internal/procspy/handlers"
+        "procspy/internal/procspy/service"
+        "procspy/internal/procspy/storage"
+
+        "github.com/gin-gonic/gin"
+)
+
+type Server struct {
+        router *gin.Engine
+
+        config *config.Server
+
+        dbConn *storage.DbConnection
+
+        commandHandler     *handlers.Command
+        targetHandler      *handlers.Target
+        matchHandler       *handlers.Match
+        reportHandler      *handlers.Report
+        healthcheckHandler *handlers.Healthcheck
+
+        srv *http.Server
+}
+
+func NewServer(config *config.Server) *Server <span class="cov8" title="1">{
+        ret := &amp;Server{
+                config: config,
+                dbConn: storage.NewDbConnection(config.DBPath),
+        }
+
+        ret.initServices()
+
+        return ret
+}</span>
+
+func (s *Server) initServices() <span class="cov8" title="1">{
+        log.Printf("Creating services...")
+        commandService := service.NewCommand(s.dbConn)
+        targetService := service.NewTarget(s.config)
+        matchService := service.NewMatch(s.dbConn)
+        userService := service.NewUsers(s.config)
+        log.Printf("Services created")
+
+        log.Printf("Initializing handlers...")
+        s.commandHandler = handlers.NewCommand(commandService, userService)
+        s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
+        s.matchHandler = handlers.NewMatch(matchService, userService)
+        s.reportHandler = handlers.NewReport(targetService, userService, matchService, commandService)
+        s.healthcheckHandler = handlers.NewHealthcheck()
+        log.Printf("Handlers created")
+}</span>
+
+func (s *Server) Start() <span class="cov0" title="0">{
+        log.Printf("Starting server on %s:%d", s.config.APIHost, s.config.APIPort)
+
+        gin.ForceConsoleColor()
+        gin.DefaultWriter = log.Writer()
+        gin.DefaultErrorWriter = log.Writer()
+        if s.config.Debug </span><span class="cov0" title="0">{
+                gin.SetMode(gin.DebugMode)
+        }</span> else<span class="cov0" title="0"> {
+                gin.SetMode(gin.ReleaseMode)
+        }</span>
+
+        <span class="cov0" title="0">s.router = gin.Default()
+        s.router.GET("/targets/:user", s.targetHandler.GetTargets)
+        s.router.POST("/match/:user", s.matchHandler.InsertMatch)
+        s.router.POST("/command/:user", s.commandHandler.InsertCommand)
+        s.router.GET("/report/:user", s.reportHandler.GetReport)
+        s.router.GET("/healthcheck", s.healthcheckHandler.GetStatus)
+
+        log.Print("Router started")
+
+        s.srv = &amp;http.Server{
+                Addr:    fmt.Sprintf("%s:%d", s.config.APIHost, s.config.APIPort),
+                Handler: s.router,
+        }
+
+        go func() </span><span class="cov0" title="0">{
+                log.Printf("Server running under goroutine, listen and serve on %s:%d", s.config.APIHost, s.config.APIPort)
+                if err := s.srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
+                        log.Printf("listen: %s\n", err)
+                }</span>
+
+                <span class="cov0" title="0">log.Print("Server stopped")</span>
+        }()
+
+        <span class="cov0" title="0">quit := make(chan os.Signal, 1)
+        signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quit
+
+        log.Println("Shutting down server...")
+
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+
+        if err := s.srv.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Server forced to shutdown:", err)
+        }</span>
+
+        <span class="cov0" title="0">log.Println("Server exiting")</span>
+}
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package service
+
+import (
+        "log"
+        "procspy/internal/procspy/domain"
+        "procspy/internal/procspy/storage"
+)
+
+type Command struct {
+        storage *storage.Command
+}
+
+func NewCommand(conn *storage.DbConnection) *Command <span class="cov10" title="3">{
+        ret := &amp;Command{
+                storage: storage.NewCommand(conn),
+        }
+
+        log.Printf("[service.Command] Initializing storage")
+        err := ret.storage.Init()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Command] Error initializing storage: %s", err)
+                panic(err)</span>
+        }
+
+        <span class="cov10" title="3">return ret</span>
+}
+
+func (c *Command) Close() error <span class="cov0" title="0">{
+        log.Printf("[service.Command] Closing storage")
+        return c.storage.Close()
+}</span>
+
+func (c *Command) InsertCommand(cmd *domain.Command) error <span class="cov6" title="2">{
+        log.Printf("[service.Command] Inserting command: %s", cmd.CommandLine)
+        return c.storage.InsertCommand(cmd)
+}</span>
+
+func (c *Command) GetCommands(user string) ([]*domain.Command, error) <span class="cov1" title="1">{
+        log.Printf("[service.Command] Get commands from user: %s", user)
+        return c.storage.GetCommands(user)
+}</span>
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package service
+
+import (
+        "log"
+        "procspy/internal/procspy/domain"
+        "procspy/internal/procspy/storage"
+)
+
+type Match struct {
+        storage *storage.Match
+}
+
+var MATCH_MAX_ELAPSED float64 = 120
+
+func NewMatch(conn *storage.DbConnection) *Match <span class="cov10" title="4">{
+        ret := &amp;Match{
+                storage: storage.NewMatch(conn),
+        }
+
+        log.Printf("[service.Match] Initializing storage")
+
+        err := ret.storage.Init()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Match] Error initializing storage: %s", err)
+                panic(err)</span>
+        }
+
+        <span class="cov10" title="4">return ret</span>
+}
+
+func (m *Match) Close() error <span class="cov0" title="0">{
+        log.Printf("[service.Match] Closing storage")
+        return m.storage.Close()
+}</span>
+
+func (m *Match) InsertMatch(match *domain.Match) error <span class="cov8" title="3">{
+        log.Printf("[service.Match] Inserting match: %s", match.Pattern)
+
+        if match.Elapsed &gt; MATCH_MAX_ELAPSED </span><span class="cov1" title="1">{
+                log.Printf("[service.Match] Match elapsed time too high: %f", match.Elapsed)
+                match.Elapsed = MATCH_MAX_ELAPSED
+        }</span>
+
+        <span class="cov8" title="3">return m.storage.InsertMatch(match)</span>
+}
+
+func (m *Match) GetMatches(user string) (map[string]float64, error) <span class="cov1" title="1">{
+        data, err := m.storage.GetMatches(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Match] Error getting matches: %s", err)
+        }</span>
+
+        <span class="cov1" title="1">return data, err</span>
+}
+
+func (m *Match) GetMatchesInfo(user string) (map[string]*domain.MatchInfo, error) <span class="cov0" title="0">{
+        data, err := m.storage.GetMatchesInfo(user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Match] Error getting matches info: %s", err)
+        }</span>
+
+        <span class="cov0" title="0">return data, err</span>
+}
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package service
+
+import (
+        "fmt"
+        "io"
+        "log"
+        "net/http"
+        "procspy/internal/procspy/config"
+        "procspy/internal/procspy/domain"
+)
+
+type Target struct {
+        urls map[string]string
+}
+
+func NewTarget(config *config.Server) *Target <span class="cov10" title="2">{
+        return &amp;Target{
+                urls: config.UserTarges,
+        }
+}</span>
+
+func (t *Target) GetTargets(user string) (*domain.TargetList, error) <span class="cov1" title="1">{
+        ret := &amp;domain.TargetList{
+                Targets: []*domain.Target{},
+        }
+
+        for k, v := range t.urls </span><span class="cov0" title="0">{
+                if k == user </span><span class="cov0" title="0">{
+                        data, err := t.getFromUrl(v)
+
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[service.Target] Error getting targets: %s from %s", err, v)
+                                return nil, err
+                        }</span>
+
+                        <span class="cov0" title="0">ret, err = domain.TargetListFromJson(data)
+
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[service.Target] Error unmarshalling targets: %s", err)
+                                return nil, err
+                        }</span>
+                        <span class="cov0" title="0">break</span>
+                }
+        }
+
+        <span class="cov1" title="1">for k, v := range ret.Targets </span><span class="cov0" title="0">{
+                v.User = user
+                ret.Targets[k] = v
+        }</span>
+
+        <span class="cov1" title="1">if ret == nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Target] No targets found for user: %s", user)
+                return nil, fmt.Errorf("no targets found for user: %s", user)
+        }</span>
+
+        <span class="cov1" title="1">return ret, nil</span>
+}
+
+func (t *Target) getFromUrl(url string) (string, error) <span class="cov0" title="0">{
+        res, err := http.Get(url)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Target] Error getting url: %s", err)
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">if res.StatusCode != 200 </span><span class="cov0" title="0">{
+                log.Printf("[service.Target] Error: status code is %d", res.StatusCode)
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">body, err := io.ReadAll(res.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[service.Target] Error reading response body: %s", err)
+                return "", err
+        }</span>
+
+        <span class="cov0" title="0">return string(body), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package service
+
+import "procspy/internal/procspy/config"
+
+type Users struct {
+        config *config.Server
+}
+
+func NewUsers(config *config.Server) *Users <span class="cov10" title="3">{
+        return &amp;Users{config: config}
+}</span>
+
+func (u *Users) GetUsers() ([]string, error) <span class="cov1" title="1">{
+        var ret []string
+
+        for k := range u.config.UserTarges </span><span class="cov6" title="2">{
+                ret = append(ret, k)
+        }</span>
+
+        <span class="cov1" title="1">return ret, nil</span>
+}
+
+func (u *Users) Exists(user string) bool <span class="cov6" title="2">{
+        _, ok := u.config.UserTarges[user]
+        return ok
+}</span>
+</pre>
+		
+		<pre class="file" id="file21" style="display: none">package storage
+
+import (
+        "errors"
+        "log"
+        "procspy/internal/procspy/domain"
+)
+
+type Command struct {
+        conn *DbConnection
+}
+
+func NewCommand(dbConn *DbConnection) *Command <span class="cov10" title="4">{
+        ret := &amp;Command{
+                conn: dbConn,
+        }
+
+        err := ret.Init()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Error initializing storage: %s", err)
+                panic(err)</span>
+        }
+
+        <span class="cov10" title="4">return ret</span>
+}
+
+func (c *Command) Init() error <span class="cov10" title="4">{
+        create := `
+CREATE TABLE IF NOT EXISTS command_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        name TEXT NOT NULL,
+        command_line TEXT NOT NULL,
+        command_return TEXT DEFAULT NULL,
+        source TEXT NOT NULL,
+        command_log TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+);        
+
+CREATE TABLE IF NOT EXISTS command_log_old (
+        id INTEGER,
+        user TEXT NOT NULL,
+        name TEXT NOT NULL,
+        command_line TEXT NOT NULL,
+        command_return TEXT DEFAULT NULL,
+        source TEXT NOT NULL,
+        command_log TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+);
+
+INSERT INTO command_log_old
+SELECT
+        id,
+        user,
+        name,
+        command_line,
+        command_return,
+        source,
+        command_log,
+        created_at
+FROM        
+        command_log
+WHERE
+        date(created_at) &lt; date(date('now', 'localtime'), '-1 day')
+ORDER BY
+        created_at DESC;
+
+DELETE FROM command_log
+WHERE
+        date(created_at) &lt; date(date('now', 'localtime'), '-1 day');
+        `
+        if c.conn == nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Error creating tables: db is nil")
+                return errors.New("db is nil")
+        }</span>
+
+        <span class="cov10" title="4">err := c.conn.Exec(create)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Error creating tables: %s", err)
+        }</span>
+
+        <span class="cov10" title="4">return err</span>
+}
+
+func (c *Command) Close() error <span class="cov1" title="1">{
+        if c.conn == nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Database is already closed")
+                return nil
+        }</span>
+
+        <span class="cov1" title="1">return c.conn.Close()</span>
+}
+
+func (c *Command) InsertCommand(cmd *domain.Command) error <span class="cov8" title="3">{
+        insert := `
+INSERT INTO command_log (
+        user, 
+        name, 
+        command_line, 
+        command_return, 
+        source, 
+        command_log)
+VALUES 
+        (?, ?, ?, ?, ?, ?)
+`
+        err := c.conn.Exec(insert, cmd.User, cmd.Name, cmd.CommandLine, cmd.Return, cmd.Source, cmd.CommandLog)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Error executing query: %s -&gt; error: %s", insert, err)
+        }</span>
+
+        <span class="cov8" title="3">return err</span>
+}
+
+func (c *Command) GetCommands(user string) ([]*domain.Command, error) <span class="cov1" title="1">{
+        log.Printf("[storage.Command] Get commands from user: %s", user)
+
+        ret := make([]*domain.Command, 0)
+        query := `
+SELECT
+        user User,
+        name Name,
+        command_line CommandLine,
+        command_return Return,
+        source Source,
+        command_log CommandLog,
+        created_at CreatedAt
+FROM
+        command_log
+WHERE
+        user = ?
+        and created_at &gt;= date('now', 'localtime', '-2 day')
+ORDER BY
+        created_at DESC
+`
+        rows, err := c.conn.conn.Query(query, user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Command] Error executing query: %s -&gt; error: %s", query, err)
+                return nil, err
+        }</span>
+        <span class="cov1" title="1">defer rows.Close()
+
+        for rows.Next() </span><span class="cov5" title="2">{
+                cmd := domain.Command{}
+                if err := rows.Scan(&amp;cmd.User, &amp;cmd.Name, &amp;cmd.CommandLine, &amp;cmd.Return, &amp;cmd.Source, &amp;cmd.CommandLog, &amp;cmd.CreatedAt); err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[storage.Command] Error scanning row: %s", err)
+                        continue</span>
+                }
+                <span class="cov5" title="2">ret = append(ret, &amp;cmd)</span>
+        }
+
+        <span class="cov1" title="1">return ret, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file22" style="display: none">package storage
+
+import (
+        "database/sql"
+        "fmt"
+        "log"
+
+        _ "modernc.org/sqlite"
+)
+
+type DbConnection struct {
+        conn *sql.DB
+        path string
+}
+
+func NewDbConnection(path string) *DbConnection <span class="cov7" title="14">{
+        return &amp;DbConnection{
+                path: path,
+        }
+}</span>
+
+func (d *DbConnection) makeDBPath() string <span class="cov10" title="37">{
+        if d.path == ":memory:" </span><span class="cov9" title="36">{
+                return ":memory:"
+        }</span>
+        <span class="cov1" title="1">return fmt.Sprintf("%s/procspy.db", d.path)</span>
+}
+func (d *DbConnection) GetConn() (*sql.DB, error) <span class="cov8" title="24">{
+        path := d.makeDBPath()
+
+        if d.conn == nil </span><span class="cov7" title="12">{
+                log.Printf("[DbConnection] Opening connection to %s", path)
+                conn, err := sql.Open("sqlite", path)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[DbConnection] Error connecting to database: %s", err)
+                        return nil, err
+                }</span>
+                <span class="cov7" title="12">d.conn = conn</span>
+        }
+
+        <span class="cov8" title="24">return d.conn, nil</span>
+}
+
+func (d *DbConnection) Close() error <span class="cov7" title="13">{
+        if d.conn == nil </span><span class="cov1" title="1">{
+                log.Printf("[DbConnection] Database is already closed")
+                return nil
+        }</span>
+
+        <span class="cov7" title="12">err := d.conn.Close()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[DbConnection] Error closing connection: %s", err)
+                return err
+        }</span>
+
+        <span class="cov7" title="12">d.conn = nil
+
+        log.Printf("[DbConnection] Connection closed for %s", d.makeDBPath())
+
+        return nil</span>
+}
+
+func (d *DbConnection) Exec(query string, args ...any) error <span class="cov8" title="20">{
+        conn, err := d.GetConn()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[DbConnection] Error getting connection: %s", err)
+                return err
+        }</span>
+
+        <span class="cov8" title="20">res, err := conn.Exec(query, args...)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[DbConnection] Error executing query: %s", err)
+                return err
+        }</span>
+
+        <span class="cov8" title="20">if res != nil </span><span class="cov8" title="20">{
+                affected, err := res.RowsAffected()
+
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[DbConnection] Error getting rows affected: %s", err)
+                        return err
+                }</span>
+
+                <span class="cov8" title="20">lastId, err := res.LastInsertId()
+
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[DbConnection] Error getting last id: %s", err)
+                        return err
+                }</span>
+
+                <span class="cov8" title="20">log.Printf("[DbConnection] Query executed successfully: %d rows affected -&gt; lastId: %d", affected, lastId)</span>
+        }
+
+        <span class="cov8" title="20">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file23" style="display: none">package storage
+
+import (
+        "errors"
+        "log"
+        "procspy/internal/procspy/domain"
+)
+
+type Match struct {
+        conn *DbConnection
+}
+
+func NewMatch(dbConn *DbConnection) *Match <span class="cov9" title="5">{
+        ret := &amp;Match{
+                conn: dbConn,
+        }
+
+        err := ret.Init()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error initializing storage: %s", err)
+                panic(err)</span>
+        }
+
+        <span class="cov9" title="5">return ret</span>
+}
+
+func (m *Match) Init() error <span class="cov9" title="5">{
+        create := `
+CREATE TABLE IF NOT EXISTS matches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT NOT NULL,
+        name TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        match TEXT NOT NULL,
+        elapsed int DEFAULT 60,
+        created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+);        
+
+CREATE TABLE IF NOT EXISTS matches_old (
+        id INTEGER,
+        user TEXT NOT NULL,
+        name TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        match TEXT NOT NULL,
+        elapsed int DEFAULT 60,
+        created_at TIMESTAMP DEFAULT (datetime('now', 'localtime'))
+);
+
+INSERT INTO matches_old
+SELECT
+        id,
+        user,
+        name,
+        pattern,
+        match,
+        elapsed,
+        created_at
+FROM
+        matches
+WHERE
+        date(created_at) &lt;= date(date('now', 'localtime'), '-1 day')
+ORDER BY 
+        created_at DESC;
+
+DELETE FROM matches
+WHERE
+        created_at &lt; date(date('now', 'localtime'), '-1 day');
+`
+        if m.conn == nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error creating tables: db is nil")
+                return errors.New("db is nil")
+        }</span>
+
+        <span class="cov9" title="5">err := m.conn.Exec(create)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error creating tables: %s", err)
+        }</span>
+
+        <span class="cov9" title="5">return err</span>
+}
+
+func (m *Match) Close() error <span class="cov1" title="1">{
+        if m.conn == nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Database is already closed")
+                return nil
+        }</span>
+
+        <span class="cov1" title="1">return m.conn.Close()</span>
+}
+
+func (m *Match) InsertMatch(match *domain.Match) error <span class="cov10" title="6">{
+        insert := `
+INSERT INTO matches
+(
+        user,
+        name,
+        pattern,
+        match,
+        elapsed
+)
+VALUES
+(        
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+);`
+
+        if m.conn == nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error logging match: db is nil")
+                return errors.New("db is nil")
+        }</span>
+
+        <span class="cov10" title="6">err := m.conn.Exec(insert, match.User, match.Name, match.Pattern, match.Match, match.Elapsed)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error logging match: %s", err)
+        }</span>
+
+        <span class="cov10" title="6">return err</span>
+}
+
+func (m *Match) GetMatches(user string) (map[string]float64, error) <span class="cov1" title="1">{
+        query := `
+SELECT
+        name,
+        sum(elapsed) elapsed,
+    min(created_at) first_elapsed,
+    max(created_at) last_elapsed        
+FROM
+        matches
+WHERE
+        user = ?
+        and date(created_at) &gt;= date('now', 'localtime')
+GROUP BY
+        name
+ORDER BY        
+        name DESC;
+`
+        conn, err := m.conn.GetConn()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error getting connection: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">rows, err := conn.Query(query, user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error getting matches: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">defer rows.Close()
+
+        ret := make(map[string]float64)
+
+        for rows.Next() </span><span class="cov4" title="2">{
+                var name string
+                var elapsed float64
+                var firstElapsed string
+                var lastElapsed string
+                err = rows.Scan(&amp;name, &amp;elapsed, &amp;firstElapsed, &amp;lastElapsed)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[storage.Match] Error scanning matches: %s", err)
+                        return nil, err
+                }</span>
+
+                <span class="cov4" title="2">ret[name] = elapsed</span>
+        }
+
+        <span class="cov1" title="1">return ret, nil</span>
+}
+
+func (m *Match) GetMatchesInfo(user string) (map[string]*domain.MatchInfo, error) <span class="cov1" title="1">{
+        query := `
+SELECT
+        name,
+        sum(elapsed) elapsed,
+    min(created_at) first,
+    max(created_at) last,
+        count(*) ocurrences
+FROM
+        matches
+WHERE
+        user = ?
+        and date(created_at) &gt;= date('now', 'localtime')
+GROUP BY
+        name
+ORDER BY        
+        name DESC;
+`
+        conn, err := m.conn.GetConn()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error getting connection: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">rows, err := conn.Query(query, user)
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[storage.Match] Error getting matches: %s", err)
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">defer rows.Close()
+
+        ret := make(map[string]*domain.MatchInfo)
+
+        for rows.Next() </span><span class="cov1" title="1">{
+                var name string
+
+                var elapsed float64
+                var first string
+                var last string
+                var ocurrences int
+
+                err = rows.Scan(&amp;name, &amp;elapsed, &amp;first, &amp;last, &amp;ocurrences)
+
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Printf("[storage.Match] Error scanning matches: %s", err)
+                        return nil, err
+                }</span>
+
+                <span class="cov1" title="1">ret[name] = &amp;domain.MatchInfo{
+                        Elapsed:    elapsed,
+                        FirstMatch: first,
+                        LastMatch:  last,
+                        Ocurrences: ocurrences,
+                }</span>
+        }
+
+        <span class="cov1" title="1">return ret, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file24" style="display: none">package watcher
+
+import (
+        "io"
+        "log"
+        "net/http"
+        "os/exec"
+        "procspy/internal/procspy/config"
+        "time"
+)
+
+type Watcher struct {
+        config  *config.Watcher
+        enabled bool
+}
+
+func NewWatcher(config *config.Watcher) *Watcher <span class="cov8" title="1">{
+        ret := &amp;Watcher{config: config}
+
+        return ret
+}</span>
+
+func (w *Watcher) Start() <span class="cov0" title="0">{
+        log.Printf("[Start] Watcher started")
+
+        w.enabled = true
+
+        log.Printf("[Start] Starting with config -&gt;\n%s", w.config.ToJson())
+
+        for w.enabled </span><span class="cov0" title="0">{
+                w.check()
+                wait := time.Duration(w.config.Interval) * time.Second
+                log.Printf("[Start] Waiting %s until next check...", wait)
+                time.Sleep(wait)
+        }</span>
+}
+
+func (w *Watcher) Stop() <span class="cov0" title="0">{
+        w.enabled = false
+        log.Printf("[Stop] Stopping...")
+}</span>
+
+func executeCommand(command string) (string, error) <span class="cov0" title="0">{
+        cmd := exec.Command(command)
+
+        log.Printf("[executeCommand] Executing command: %s", command)
+        err := cmd.Run()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[executeCommand] Error executing command: %s -&gt; %s", command, err)
+        }</span>
+
+        <span class="cov0" title="0">buf, err := cmd.Output()
+
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[executeCommand] Error to read command output: %s -&gt; %s", command, err)
+        }</span>
+
+        <span class="cov0" title="0">return string(buf), err</span>
+}
+
+func (w *Watcher) check() <span class="cov0" title="0">{
+        log.Printf("[check] Running watcher...")
+
+        body, status, err := w.httpGet(w.config.ProcspyURL)
+
+        if err != nil || status != http.StatusOK </span><span class="cov0" title="0">{
+                log.Printf("[check] Procspy is down! Status: %d, Error: %s", status, err)
+
+                if w.config.StartCmd != "" </span><span class="cov0" title="0">{
+                        ret, err := executeCommand(w.config.StartCmd)
+                        if err != nil </span><span class="cov0" title="0">{
+                                log.Printf("[check] Error executing start command: %s", err)
+                        }</span> else<span class="cov0" title="0"> {
+                                log.Printf("[check] Start command executed successfully -&gt; %s", ret)
+                        }</span>
+                } else<span class="cov0" title="0"> {
+                        log.Printf("[check] No start command configured")
+                }</span>
+        } else<span class="cov0" title="0"> {
+                log.Printf("[check] Procspy is up! Status: %d, Response: %s", status, body)
+        }</span>
+}
+
+func (w *Watcher) httpGet(url string) (string, int, error) <span class="cov0" title="0">{
+        res, err := http.Get(url)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpGet] Error getting url: %s", err)
+                return "", http.StatusInternalServerError, err
+        }</span>
+
+        <span class="cov0" title="0">defer res.Body.Close()
+        body, err := io.ReadAll(res.Body)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Printf("[httpGet] Error reading body: %s", err)
+                return "", res.StatusCode, err
+        }</span>
+
+        <span class="cov0" title="0">return string(body), res.StatusCode, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

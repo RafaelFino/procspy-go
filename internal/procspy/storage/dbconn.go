@@ -20,6 +20,9 @@ func NewDbConnection(path string) *DbConnection {
 }
 
 func (d *DbConnection) makeDBPath() string {
+	if d.path == ":memory:" {
+		return ":memory:"
+	}
 	return fmt.Sprintf("%s/procspy.db", d.path)
 }
 func (d *DbConnection) GetConn() (*sql.DB, error) {

@@ -161,7 +161,9 @@ ORDER BY
 	for rows.Next() {
 		var name string
 		var elapsed float64
-		err = rows.Scan(&name, &elapsed)
+		var firstElapsed string
+		var lastElapsed string
+		err = rows.Scan(&name, &elapsed, &firstElapsed, &lastElapsed)
 
 		if err != nil {
 			log.Printf("[storage.Match] Error scanning matches: %s", err)

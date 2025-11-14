@@ -1471,7 +1471,7 @@ limite_em_segundos = 3600 * multiplicador
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/procspy.git
+git clone https://github.com/RafaelFino/procspy.git
 cd procspy
 
 # Build usando o script
@@ -1774,7 +1774,7 @@ scp -r procspy/ user@seu-servidor.com:/home/user/
 
 # Ou clonar diretamente no servidor
 ssh user@seu-servidor.com
-git clone https://github.com/seu-usuario/procspy.git
+git clone https://github.com/RafaelFino/procspy.git
 cd procspy
 ```
 
@@ -2766,8 +2766,8 @@ Desenvolvido com ❤️ para ajudar famílias a gerenciar o tempo de tela de for
 
 ### Contato e Suporte
 
-- **Issues**: https://github.com/seu-usuario/procspy/issues
-- **Discussões**: https://github.com/seu-usuario/procspy/discussions
+- **Issues**: https://github.com/RafaelFino/procspy/issues
+- **Discussões**: https://github.com/RafaelFino/procspy/discussions
 - **Email**: seu-email@exemplo.com
 
 ---

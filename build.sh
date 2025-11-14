@@ -137,6 +137,7 @@ usage() {
     echo "  -a, --all           Compila para todas as plataformas"
     echo "  -c, --clean         Limpa diretório de build antes"
     echo "  --no-fmt            Pula formatação automática do código"
+    echo "  --no-changelog      Pula geração do CHANGELOG.md"
     echo ""
     echo "Exemplos:"
     echo "  $0                  # Testa e compila para plataforma atual"
@@ -300,6 +301,7 @@ BUILD_ONLY=false
 BUILD_ALL=false
 CLEAN=false
 NO_FMT=false
+NO_CHANGELOG=false
 SPECIFIC_PLATFORM=""
 
 while [[ $# -gt 0 ]]; do
@@ -331,6 +333,10 @@ while [[ $# -gt 0 ]]; do
             NO_FMT=true
             shift
             ;;
+        --no-changelog)
+            NO_CHANGELOG=true
+            shift
+            ;;
         *)
             log_msg "${RED}Opção desconhecida: $1${NC}"
             usage
@@ -344,6 +350,19 @@ start_timer "total"
 # Limpa se solicitado
 if [ "$CLEAN" = true ]; then
     clean_build
+fi
+
+# Gera CHANGELOG.md se não for build-only e não tiver --no-changelog
+if [ "$BUILD_ONLY" = false ] && [ "$NO_CHANGELOG" = false ]; then
+    if [ -f "./make-changelog.sh" ]; then
+        log_msg "${YELLOW}Gerando CHANGELOG.md...${NC}"
+        if ./make-changelog.sh; then
+            log_msg "${GREEN}✓ CHANGELOG.md atualizado${NC}"
+        else
+            log_msg "${YELLOW}⚠ Falha ao gerar CHANGELOG (continuando build)${NC}"
+        fi
+        echo ""
+    fi
 fi
 
 # Executa formatação automática se não for build-only e não tiver --no-fmt

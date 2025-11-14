@@ -2666,7 +2666,7 @@ Esta seção fornece links para documentação adicional do projeto.
 
 ### Testes
 
-- **[test.md](test.md)** - Guia completo de testes do projeto
+- **[TEST.md](TEST.md)** - Guia completo de testes do projeto
   - Estrutura de testes unitários
   - Como executar testes
   - Análise de coverage
@@ -2674,12 +2674,12 @@ Esta seção fornece links para documentação adicional do projeto.
 
 ### Compatibilidade Cross-Platform
 
-- **[cross_platform_testing.md](cross_platform_testing.md)** - Testes de compatibilidade entre plataformas
+- **[CROSS_PLATFORM_TESTING.md](CROSS_PLATFORM_TESTING.md)** - Testes de compatibilidade entre plataformas
   - Resultados de testes em Windows, Linux e macOS
   - Problemas conhecidos por plataforma
   - Soluções e workarounds
 
-- **[platform_compatibility_summary.md](platform_compatibility_summary.md)** - Resumo de compatibilidade
+- **[PLATFORM_COMPATIBILITY_SUMMARY.md](PLATFORM_COMPATIBILITY_SUMMARY.md)** - Resumo de compatibilidade
   - Matriz de compatibilidade por sistema operacional
   - Funcionalidades suportadas por plataforma
   - Requisitos específicos de cada OS
@@ -2803,6 +2803,17 @@ Desenvolvido com ❤️ para ajudar famílias a gerenciar o tempo de tela de for
 - **Issues**: https://github.com/RafaelFino/procspy/issues
 - **Discussões**: https://github.com/RafaelFino/procspy/discussions
 - **Email**: seu-email@exemplo.com
+
+---
+
+## 📝 Changelog
+
+Para ver o histórico completo de mudanças do projeto, consulte o [CHANGELOG.md](CHANGELOG.md).
+
+O changelog é gerado automaticamente a partir do histórico Git e contém:
+- Timeline visual dos commits
+- Tabela resumo com data/hora, mensagem e resumo das mudanças
+- Detalhes completos de cada commit
 
 ---
 

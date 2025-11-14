@@ -72,7 +72,7 @@ go tool cover -func=coverage.out
 
 ## Documentation Files
 
-1. **test.md** - Complete test documentation with cross-platform instructions
+1. **TEST.md** - Complete test documentation with cross-platform instructions
 2. **CROSS_PLATFORM_TESTING.md** - Detailed validation report and CI/CD examples
 3. **PLATFORM_COMPATIBILITY_SUMMARY.md** - This quick reference guide
 

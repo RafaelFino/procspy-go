@@ -24,7 +24,6 @@ Sistema distribuído de monitoramento e controle parental desenvolvido em Go par
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Segurança](#-segurança)
 - [FAQ](#-faq)
-- [Contribuição e Licença](#-contribuição-e-licença)
 
 ---
 
@@ -2768,41 +2767,9 @@ R: Verifique permissões do diretório de logs. Verifique se `log_path` está co
 
 ---
 
-## 🤝 Contribuição e Licença
-
-### Como Contribuir
-
-Contribuições são bem-vindas! Para contribuir:
-
-1. Fork o repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
-### Áreas para Contribuição
-
-- 🐛 Correção de bugs
-- ✨ Novas funcionalidades
-- 📝 Melhorias na documentação
-- 🌍 Traduções
-- 🧪 Testes automatizados
-- 🎨 Interface web para gerenciamento
-- 📱 Aplicativo mobile para monitoramento
-
 ### Licença
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-### Autor
-
-Desenvolvido com ❤️ para ajudar famílias a gerenciar o tempo de tela de forma saudável.
-
-### Contato e Suporte
-
-- **Issues**: https://github.com/RafaelFino/procspy/issues
-- **Discussões**: https://github.com/RafaelFino/procspy/discussions
-- **Email**: seu-email@exemplo.com
 
 ---
 

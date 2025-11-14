@@ -2660,6 +2660,40 @@ User=root
 
 ---
 
+## 📚 Documentação
+
+Esta seção fornece links para documentação adicional do projeto.
+
+### Testes
+
+- **[test.md](test.md)** - Guia completo de testes do projeto
+  - Estrutura de testes unitários
+  - Como executar testes
+  - Análise de coverage
+  - Boas práticas de teste
+
+### Compatibilidade Cross-Platform
+
+- **[cross_platform_testing.md](cross_platform_testing.md)** - Testes de compatibilidade entre plataformas
+  - Resultados de testes em Windows, Linux e macOS
+  - Problemas conhecidos por plataforma
+  - Soluções e workarounds
+
+- **[platform_compatibility_summary.md](platform_compatibility_summary.md)** - Resumo de compatibilidade
+  - Matriz de compatibilidade por sistema operacional
+  - Funcionalidades suportadas por plataforma
+  - Requisitos específicos de cada OS
+
+### Coverage e Qualidade
+
+- **[coverage/coverage_analysis.md](coverage/coverage_analysis.md)** - Análise detalhada de cobertura de testes
+  - Métricas de coverage por pacote
+  - Áreas com baixa cobertura
+  - Plano de melhoria de testes
+  - Histórico de coverage
+
+---
+
 ## ❓ FAQ
 
 ### Perguntas Gerais

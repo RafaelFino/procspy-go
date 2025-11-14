@@ -19,7 +19,7 @@ func NewHealthcheck() *Healthcheck {
 }
 
 func (h *Healthcheck) GetStatus(ctx *gin.Context) {
-	log.Printf("[handler.Healthcheck] Status check OK")
+	log.Printf("[handlers.Healthcheck.GetStatus] Health check passed - server is running")
 	ctx.IndentedJSON(http.StatusOK, gin.H{
 		"elapsed":   time.Since(h.startTime).Milliseconds(),
 		"timestamp": time.Now().Format(time.RFC3339),

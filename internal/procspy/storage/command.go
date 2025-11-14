@@ -18,7 +18,7 @@ func NewCommand(dbConn *DbConnection) *Command {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[storage.Command] Error initializing storage: %s", err)
+		log.Printf("[storage.Command.NewCommand] Failed to initialize command storage: %v", err)
 		panic(err)
 	}
 
@@ -71,14 +71,14 @@ WHERE
 	date(created_at) < date(date('now', 'localtime'), '-1 day');
 	`
 	if c.conn == nil {
-		log.Printf("[storage.Command] Error creating tables: db is nil")
+		log.Printf("[storage.Command.Init] Cannot create tables: database connection is nil")
 		return errors.New("db is nil")
 	}
 
 	err := c.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[storage.Command] Error creating tables: %s", err)
+		log.Printf("[storage.Command.Init] Failed to create command tables: %v", err)
 	}
 
 	return err
@@ -86,7 +86,7 @@ WHERE
 
 func (c *Command) Close() error {
 	if c.conn == nil {
-		log.Printf("[storage.Command] Database is already closed")
+		log.Printf("[storage.Command.Close] Database connection is already closed")
 		return nil
 	}
 
@@ -108,14 +108,14 @@ VALUES
 	err := c.conn.Exec(insert, cmd.User, cmd.Name, cmd.CommandLine, cmd.Return, cmd.Source, cmd.CommandLog)
 
 	if err != nil {
-		log.Printf("[storage.Command] Error executing query: %s -> error: %s", insert, err)
+		log.Printf("[storage.Command.InsertCommand] Failed to insert command for user '%s': %v", cmd.User, err)
 	}
 
 	return err
 }
 
 func (c *Command) GetCommands(user string) ([]*domain.Command, error) {
-	log.Printf("[storage.Command] Get commands from user: %s", user)
+	log.Printf("[storage.Command.GetCommands] Retrieving commands for user '%s'", user)
 
 	ret := make([]*domain.Command, 0)
 	query := `
@@ -138,7 +138,7 @@ ORDER BY
 	rows, err := c.conn.conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[storage.Command] Error executing query: %s -> error: %s", query, err)
+		log.Printf("[storage.Command.GetCommands] Failed to query commands for user '%s': %v", user, err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -146,7 +146,7 @@ ORDER BY
 	for rows.Next() {
 		cmd := domain.Command{}
 		if err := rows.Scan(&cmd.User, &cmd.Name, &cmd.CommandLine, &cmd.Return, &cmd.Source, &cmd.CommandLog, &cmd.CreatedAt); err != nil {
-			log.Printf("[storage.Command] Error scanning row: %s", err)
+			log.Printf("[storage.Command.GetCommands] Failed to scan command row for user '%s': %v", user, err)
 			continue
 		}
 		ret = append(ret, &cmd)

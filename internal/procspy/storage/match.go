@@ -18,7 +18,7 @@ func NewMatch(dbConn *DbConnection) *Match {
 	err := ret.Init()
 
 	if err != nil {
-		log.Printf("[storage.Match] Error initializing storage: %s", err)
+		log.Printf("[storage.Match.NewMatch] Failed to initialize match storage: %v", err)
 		panic(err)
 	}
 
@@ -68,14 +68,14 @@ WHERE
 	created_at < date(date('now', 'localtime'), '-1 day');
 `
 	if m.conn == nil {
-		log.Printf("[storage.Match] Error creating tables: db is nil")
+		log.Printf("[storage.Match.Init] Cannot create tables: database connection is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(create)
 
 	if err != nil {
-		log.Printf("[storage.Match] Error creating tables: %s", err)
+		log.Printf("[storage.Match.Init] Failed to create match tables: %v", err)
 	}
 
 	return err
@@ -83,7 +83,7 @@ WHERE
 
 func (m *Match) Close() error {
 	if m.conn == nil {
-		log.Printf("[storage.Match] Database is already closed")
+		log.Printf("[storage.Match.Close] Database connection is already closed")
 		return nil
 	}
 
@@ -110,14 +110,14 @@ VALUES
 );`
 
 	if m.conn == nil {
-		log.Printf("[storage.Match] Error logging match: db is nil")
+		log.Printf("[storage.Match.InsertMatch] Cannot insert match: database connection is nil")
 		return errors.New("db is nil")
 	}
 
 	err := m.conn.Exec(insert, match.User, match.Name, match.Pattern, match.Match, match.Elapsed)
 
 	if err != nil {
-		log.Printf("[storage.Match] Error logging match: %s", err)
+		log.Printf("[storage.Match.InsertMatch] Failed to insert match for user '%s', pattern '%s': %v", match.User, match.Pattern, err)
 	}
 
 	return err
@@ -143,14 +143,14 @@ ORDER BY
 	conn, err := m.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[storage.Match] Error getting connection: %s", err)
+		log.Printf("[storage.Match.GetMatches] Failed to get database connection: %v", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[storage.Match] Error getting matches: %s", err)
+		log.Printf("[storage.Match.GetMatches] Failed to query matches for user '%s': %v", user, err)
 		return nil, err
 	}
 
@@ -166,7 +166,7 @@ ORDER BY
 		err = rows.Scan(&name, &elapsed, &firstElapsed, &lastElapsed)
 
 		if err != nil {
-			log.Printf("[storage.Match] Error scanning matches: %s", err)
+			log.Printf("[storage.Match.GetMatches] Failed to scan match row for user '%s': %v", user, err)
 			return nil, err
 		}
 
@@ -197,14 +197,14 @@ ORDER BY
 	conn, err := m.conn.GetConn()
 
 	if err != nil {
-		log.Printf("[storage.Match] Error getting connection: %s", err)
+		log.Printf("[storage.Match.GetMatchesInfo] Failed to get database connection: %v", err)
 		return nil, err
 	}
 
 	rows, err := conn.Query(query, user)
 
 	if err != nil {
-		log.Printf("[storage.Match] Error getting matches: %s", err)
+		log.Printf("[storage.Match.GetMatchesInfo] Failed to query match info for user '%s': %v", user, err)
 		return nil, err
 	}
 
@@ -223,7 +223,7 @@ ORDER BY
 		err = rows.Scan(&name, &elapsed, &first, &last, &ocurrences)
 
 		if err != nil {
-			log.Printf("[storage.Match] Error scanning matches: %s", err)
+			log.Printf("[storage.Match.GetMatchesInfo] Failed to scan match info row for user '%s': %v", user, err)
 			return nil, err
 		}
 

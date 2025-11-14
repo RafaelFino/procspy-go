@@ -52,7 +52,7 @@ func (t *Target) setWeekdays() {
 func (t *Target) ToLog() string {
 	ret, err := json.Marshal(t)
 	if err != nil {
-		log.Printf("[domain.Target] Error parsing json: %s", err)
+		log.Printf("[domain.Target.ToLog] Failed to marshal target to JSON: %v", err)
 		return ""
 	}
 	return string(ret)
@@ -60,7 +60,7 @@ func (t *Target) ToLog() string {
 func (t *Target) ToJson() string {
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
-		log.Printf("[domain.Target] Error parsing json: %s", err)
+		log.Printf("[domain.Target.ToJson] Failed to marshal target to JSON: %v", err)
 	}
 
 	return string(ret)
@@ -80,7 +80,7 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 	ret := &TargetList{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[domain.Target] Error parsing json: %s", err)
+		log.Printf("[domain.TargetListFromJson] Failed to unmarshal target list from JSON: %v", err)
 		return nil, err
 	}
 
@@ -95,7 +95,7 @@ func TargetListFromJson(jsonString string) (*TargetList, error) {
 func (t *TargetList) ToLog() string {
 	ret, err := json.MarshalIndent(t, "", "\t")
 	if err != nil {
-		log.Printf("[domain.TargetList] Error parsing json: %s", err)
+		log.Printf("[domain.TargetList.ToLog] Failed to marshal target list to JSON: %v", err)
 		return ""
 	}
 	return string(ret)

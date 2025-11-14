@@ -39,7 +39,7 @@ func (w *Watcher) SetDefaults() {
 func (w *Watcher) ToJson() string {
 	ret, err := json.MarshalIndent(w, "", "\t")
 	if err != nil {
-		log.Printf("[watcher] Error marshalling config: %s", err)
+		log.Printf("[config.Watcher.ToJson] Failed to marshal watcher configuration to JSON: %v", err)
 	}
 
 	return string(ret)
@@ -49,13 +49,13 @@ func WatcherConfigFromJson(jsonString string) (*Watcher, error) {
 	ret := &Watcher{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[watcher] Error unmarshalling config: %s", err)
+		log.Printf("[config.WatcherConfigFromJson] Failed to unmarshal watcher configuration: %v", err)
 		return nil, err
 	}
 
 	ret.SetDefaults()
 
-	log.Printf("Watcher config: %s", ret.ToJson())
+	log.Printf("[config.WatcherConfigFromJson] Watcher configuration loaded successfully: %s", ret.ToJson())
 
 	return ret, nil
 }
@@ -63,7 +63,7 @@ func WatcherConfigFromJson(jsonString string) (*Watcher, error) {
 func WatcherConfigFromFile(path string) (*Watcher, error) {
 	byteValue, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Error reading file: %s", err)
+		log.Printf("[config.WatcherConfigFromFile] Failed to read configuration file '%s': %v", path, err)
 		return nil, err
 	}
 

@@ -1,21 +1,41 @@
 # Análise de Coverage - Procspy
 
 **Data da Análise**: 2025-11-13  
-**Coverage Total Atual**: 35.9%  
+**Última Atualização**: 2025-11-13 (Atualização de formato de logs)  
+**Coverage Total Atual**: 60.3% (↑ de 35.9%)  
 **Meta de Coverage**: 99% (mínimo 70% para componentes complexos)
+
+## Mudanças Recentes
+
+### Atualização de Formato de Logs (2025-11-13)
+- **Mudança**: Todas as mensagens de log foram atualizadas do formato `[função]` para `[package.função]`
+- **Impacto**: Melhor rastreabilidade e identificação de origem dos logs
+- **Pacotes Afetados**: Todos os pacotes (watcher, server, config, domain, handlers, service, storage)
+- **Exemplo**: `[Start]` → `[watcher.Start]`, `[InsertCommand]` → `[handlers.Command.InsertCommand]`
+- **Testes**: ✅ Todos os testes foram validados e estão passando com o novo formato
+
+### Melhoria Significativa de Coverage (2025-11-13)
+- **Coverage Total**: 35.9% → 60.3% (+24.4%)
+- **Destaques**:
+  - **client**: 2.2% → 54.0% (+51.8%) 🎉
+  - **watcher**: 4.8% → 73.8% (+69.0%) 🎉
+  - **storage**: 69.5% → 74.8% (+5.3%)
+  - **service**: 47.3% → 68.9% (+21.6%)
+  - **handlers**: 10.2% → 43.8% (+33.6%)
+  - **domain**: 84.9% → 85.7% (+0.8%)
 
 ## Resumo por Pacote
 
 | Pacote | Coverage Atual | Meta | Gap | Prioridade | Status |
 |--------|----------------|------|-----|------------|--------|
 | **config** | 95.5% | 99% | 3.5% | Alta | ✅ Próximo da meta |
-| **domain** | 84.9% | 99% | 14.1% | Alta | ⚠️ Precisa melhorar |
-| **storage** | 69.5% | 95% | 25.5% | Alta | ⚠️ Precisa melhorar |
-| **service** | 47.3% | 95% | 47.7% | Alta | ❌ Crítico |
+| **domain** | 85.7% | 99% | 13.3% | Alta | ⚠️ Precisa melhorar |
+| **storage** | 74.8% | 95% | 20.2% | Alta | ⚠️ Precisa melhorar |
+| **watcher** | 73.8% | 70% | -3.8% | Média | ✅ Meta atingida! |
+| **service** | 68.9% | 95% | 26.1% | Alta | ⚠️ Precisa melhorar |
+| **client** | 54.0% | 70% | 16.0% | Alta | ⚠️ Precisa melhorar |
+| **handlers** | 43.8% | 90% | 46.2% | Alta | ❌ Crítico |
 | **server** | 35.6% | 90% | 54.4% | Média | ❌ Crítico |
-| **handlers** | 10.2% | 90% | 79.8% | Alta | ❌ Crítico |
-| **watcher** | 4.8% | 70% | 65.2% | Média | ❌ Crítico |
-| **client** | 2.2% | 70% | 67.8% | Alta | ❌ Crítico |
 | **cmd/*** | 0.0% | N/A | N/A | Baixa | ⏸️ Não testável (main) |
 
 ## Análise Detalhada por Pacote

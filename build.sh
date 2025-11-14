@@ -8,6 +8,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
@@ -17,11 +18,95 @@ VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 LDFLAGS="-X 'main.buildDate=${BUILD_DATE}' -X 'main.version=${VERSION}'"
 
-# Função para logging com timestamp
+# Função para logging com timestamp e duração opcional
+# Uso: log_msg "mensagem" [duração]
+# Exemplo: log_msg "Teste completo" "1.5s"
 log_msg() {
     local message="$1"
+    local duration="$2"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo -e "${GREEN}${BOLD}[${timestamp}]${NC} ${message}"
+    
+    if [ -n "$duration" ]; then
+        # Com duração: [timestamp] duration (alinhado à direita, 12 chars) :: mensagem
+        printf "${GREEN}${BOLD}[%s]${NC} ${BLUE}%12s${NC} :: %b\n" "$timestamp" "$duration" "$message"
+    else
+        # Sem duração: [timestamp] mensagem
+        echo -e "${GREEN}${BOLD}[${timestamp}]${NC} ${message}"
+    fi
+}
+
+# ============================================
+# Funções de Medição de Tempo
+# ============================================
+
+# Formata duração em nanosegundos para formato legível
+# Parâmetro: duração em nanosegundos
+# Retorna: string formatada com unidade apropriada (ns, ms, s)
+format_duration() {
+    local ns=$1
+    
+    # Valida input
+    if ! [[ "$ns" =~ ^[0-9]+$ ]]; then
+        echo "N/A"
+        return
+    fi
+    
+    # Verifica se bc está disponível
+    if ! command -v bc &> /dev/null; then
+        # Fallback: usar apenas divisão inteira
+        if [ $ns -lt 1000000 ]; then
+            echo "${ns}ns"
+        elif [ $ns -lt 1000000000 ]; then
+            local ms=$((ns / 1000000))
+            echo "${ms}ms"
+        else
+            local s=$((ns / 1000000000))
+            echo "${s}s"
+        fi
+        return
+    fi
+    
+    # Menos de 1ms: exibir em nanosegundos
+    if [ $ns -lt 1000000 ]; then
+        echo "${ns}ns"
+    # Entre 1ms e 1s: exibir em milissegundos
+    elif [ $ns -lt 1000000000 ]; then
+        local ms=$(echo "scale=2; $ns / 1000000" | bc)
+        echo "${ms}ms"
+    # 1s ou mais: exibir em segundos
+    else
+        local s=$(echo "scale=2; $ns / 1000000000" | bc)
+        echo "${s}s"
+    fi
+}
+
+# Inicia medição de tempo para uma operação
+# Parâmetro: nome da operação (usado como chave)
+# Armazena tempo em nanosegundos em variável global
+start_timer() {
+    local timer_name=$1
+    local var_name="TIMER_${timer_name}"
+    eval "${var_name}=$(date +%s%N)"
+}
+
+# Finaliza medição e retorna duração formatada
+# Parâmetro: nome da operação
+# Retorna: string formatada (ex: "123ms", "1.5s")
+end_timer() {
+    local timer_name=$1
+    local var_name="TIMER_${timer_name}"
+    local start_time=$(eval echo \${${var_name}})
+    
+    # Verifica se timer foi iniciado
+    if [ -z "$start_time" ]; then
+        echo "N/A"
+        return
+    fi
+    
+    local end_time=$(date +%s%N)
+    local duration=$((end_time - start_time))
+    
+    format_duration $duration
 }
 
 # Plataformas suportadas
@@ -80,14 +165,19 @@ build_component() {
     
     mkdir -p "$output_dir"
     
+    local timer_name="build_${component}_${goos}_${goarch}"
+    start_timer "$timer_name"
+    
     if GOOS=$goos GOARCH=$goarch go build \
         -ldflags "${LDFLAGS}" \
         -o "$output_path" \
         "cmd/${component}/main.go" 2>/dev/null; then
-        log_msg "  ${GREEN}✓${NC} Building ${component} for ${goos}/${goarch}"
+        local duration=$(end_timer "$timer_name")
+        log_msg "  ${GREEN}✓${NC} Building ${component} for ${goos}/${goarch}" "$duration"
         return 0
     else
-        log_msg "  ${RED}✗${NC} Building ${component} for ${goos}/${goarch}"
+        local duration=$(end_timer "$timer_name")
+        log_msg "  ${RED}✗${NC} Building ${component} for ${goos}/${goarch}" "$duration"
         return 1
     fi
 }
@@ -97,6 +187,9 @@ build_platform() {
     local platform=$1
     local goos=$(echo $platform | cut -d'/' -f1)
     local goarch=$(echo $platform | cut -d'/' -f2)
+    
+    local timer_name="platform_${goos}_${goarch}"
+    start_timer "$timer_name"
     
     log_msg "${YELLOW}=== Building for ${goos}/${goarch} ===${NC}"
     
@@ -111,6 +204,8 @@ build_platform() {
         build_component "server" "$goos" "$goarch" || return 1
     fi
     
+    local duration=$(end_timer "$timer_name")
+    log_msg "${GREEN}✓ Platform ${goos}/${goarch} build complete${NC}" "$duration"
     echo ""
     return 0
 }
@@ -152,14 +247,17 @@ run_linter() {
 
 # Função para formatação automática
 auto_format() {
+    start_timer "format"
     log_msg "${YELLOW}Formatando código Go automaticamente...${NC}"
     
     if go fmt ./...; then
-        log_msg "${GREEN}✓ Código formatado com sucesso${NC}"
+        local duration=$(end_timer "format")
+        log_msg "${GREEN}✓ Código formatado com sucesso${NC}" "$duration"
         echo ""
         return 0
     else
-        log_msg "${RED}✗ Erro ao formatar código${NC}"
+        local duration=$(end_timer "format")
+        log_msg "${RED}✗ Erro ao formatar código${NC}" "$duration"
         echo ""
         return 1
     fi
@@ -167,6 +265,7 @@ auto_format() {
 
 # Função para executar verificações de qualidade
 run_quality_checks() {
+    start_timer "quality"
     log_msg "${YELLOW}=== Verificações de Qualidade ===${NC}"
     echo ""
     
@@ -180,7 +279,8 @@ run_quality_checks() {
         return 1
     fi
     
-    log_msg "${GREEN}✓ Todas as verificações de qualidade passaram${NC}"
+    local duration=$(end_timer "quality")
+    log_msg "${GREEN}✓ Todas as verificações de qualidade passaram${NC}" "$duration"
     echo ""
     return 0
 }
@@ -189,7 +289,7 @@ run_quality_checks() {
 clean_build() {
     log_msg "${YELLOW}Limpando diretório de build...${NC}"
     rm -rf "$BUILD_DIR"
-    rm -f coverage.out
+    rm -rf coverage/
     log_msg "${GREEN}✓ Diretório limpo${NC}"
     echo ""
 }
@@ -237,6 +337,9 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Inicia timer total
+start_timer "total"
 
 # Limpa se solicitado
 if [ "$CLEAN" = true ]; then
@@ -306,4 +409,5 @@ log_msg "Estrutura:"
 tree -L 2 "$BUILD_DIR" 2>/dev/null || find "$BUILD_DIR" -type f
 
 echo ""
-log_msg "${GREEN}✓ Build concluído com sucesso!${NC}"
+TOTAL_DURATION=$(end_timer "total")
+log_msg "${GREEN}✓ Build concluído com sucesso!${NC}" "$TOTAL_DURATION"

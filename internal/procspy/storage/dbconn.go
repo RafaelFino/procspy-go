@@ -29,10 +29,10 @@ func (d *DbConnection) GetConn() (*sql.DB, error) {
 	path := d.makeDBPath()
 
 	if d.conn == nil {
-		log.Printf("[DbConnection] Opening connection to %s", path)
+		log.Printf("[storage.DbConnection.GetConn] Opening database connection to '%s'", path)
 		conn, err := sql.Open("sqlite", path)
 		if err != nil {
-			log.Printf("[DbConnection] Error connecting to database: %s", err)
+			log.Printf("[storage.DbConnection.GetConn] Failed to connect to database '%s': %v", path, err)
 			return nil, err
 		}
 		d.conn = conn
@@ -43,20 +43,20 @@ func (d *DbConnection) GetConn() (*sql.DB, error) {
 
 func (d *DbConnection) Close() error {
 	if d.conn == nil {
-		log.Printf("[DbConnection] Database is already closed")
+		log.Printf("[storage.DbConnection.Close] Database connection is already closed")
 		return nil
 	}
 
 	err := d.conn.Close()
 
 	if err != nil {
-		log.Printf("[DbConnection] Error closing connection: %s", err)
+		log.Printf("[storage.DbConnection.Close] Failed to close database connection: %v", err)
 		return err
 	}
 
 	d.conn = nil
 
-	log.Printf("[DbConnection] Connection closed for %s", d.makeDBPath())
+	log.Printf("[storage.DbConnection.Close] Database connection closed successfully for '%s'", d.makeDBPath())
 
 	return nil
 }
@@ -65,14 +65,14 @@ func (d *DbConnection) Exec(query string, args ...any) error {
 	conn, err := d.GetConn()
 
 	if err != nil {
-		log.Printf("[DbConnection] Error getting connection: %s", err)
+		log.Printf("[storage.DbConnection.Exec] Failed to get database connection: %v", err)
 		return err
 	}
 
 	res, err := conn.Exec(query, args...)
 
 	if err != nil {
-		log.Printf("[DbConnection] Error executing query: %s", err)
+		log.Printf("[storage.DbConnection.Exec] Failed to execute query: %v", err)
 		return err
 	}
 
@@ -80,18 +80,18 @@ func (d *DbConnection) Exec(query string, args ...any) error {
 		affected, err := res.RowsAffected()
 
 		if err != nil {
-			log.Printf("[DbConnection] Error getting rows affected: %s", err)
+			log.Printf("[storage.DbConnection.Exec] Failed to get rows affected count: %v", err)
 			return err
 		}
 
 		lastId, err := res.LastInsertId()
 
 		if err != nil {
-			log.Printf("[DbConnection] Error getting last id: %s", err)
+			log.Printf("[storage.DbConnection.Exec] Failed to get last insert ID: %v", err)
 			return err
 		}
 
-		log.Printf("[DbConnection] Query executed successfully: %d rows affected -> lastId: %d", affected, lastId)
+		log.Printf("[storage.DbConnection.Exec] Query executed successfully (%d rows affected, last insert ID: %d)", affected, lastId)
 	}
 
 	return nil

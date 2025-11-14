@@ -22,7 +22,7 @@ func NewServer() *Server {
 func (s *Server) ToJson() string {
 	ret, err := json.MarshalIndent(s, "", "\t")
 	if err != nil {
-		log.Printf("Error marshalling target: %s", err)
+		log.Printf("[config.Server.ToJson] Failed to marshal server configuration to JSON: %v", err)
 	}
 
 	return string(ret)
@@ -32,11 +32,11 @@ func ServerConfigFromJson(jsonString string) (*Server, error) {
 	ret := &Server{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("Error unmarshalling target: %s", err)
+		log.Printf("[config.ServerConfigFromJson] Failed to unmarshal server configuration: %v", err)
 		return nil, err
 	}
 
-	log.Printf("Server config: %s", ret.ToJson())
+	log.Printf("[config.ServerConfigFromJson] Server configuration loaded successfully: %s", ret.ToJson())
 
 	return ret, nil
 }
@@ -44,7 +44,7 @@ func ServerConfigFromJson(jsonString string) (*Server, error) {
 func ServerConfigFromFile(path string) (*Server, error) {
 	byteValue, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Error reading file: %s", err)
+		log.Printf("[config.ServerConfigFromFile] Failed to read configuration file '%s': %v", path, err)
 		return nil, err
 	}
 

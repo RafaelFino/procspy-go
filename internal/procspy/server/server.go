@@ -47,24 +47,24 @@ func NewServer(config *config.Server) *Server {
 }
 
 func (s *Server) initServices() {
-	log.Printf("Creating services...")
+	log.Printf("[server.initServices] Initializing application services...")
 	commandService := service.NewCommand(s.dbConn)
 	targetService := service.NewTarget(s.config)
 	matchService := service.NewMatch(s.dbConn)
 	userService := service.NewUsers(s.config)
-	log.Printf("Services created")
+	log.Printf("[server.initServices] All services initialized successfully")
 
-	log.Printf("Initializing handlers...")
+	log.Printf("[server.initServices] Initializing HTTP handlers...")
 	s.commandHandler = handlers.NewCommand(commandService, userService)
 	s.targetHandler = handlers.NewTarget(targetService, userService, matchService)
 	s.matchHandler = handlers.NewMatch(matchService, userService)
 	s.reportHandler = handlers.NewReport(targetService, userService, matchService, commandService)
 	s.healthcheckHandler = handlers.NewHealthcheck()
-	log.Printf("Handlers created")
+	log.Printf("[server.initServices] All HTTP handlers initialized successfully")
 }
 
 func (s *Server) Start() {
-	log.Printf("Starting server on %s:%d", s.config.APIHost, s.config.APIPort)
+	log.Printf("[server.Start] Starting Procspy server on %s:%d", s.config.APIHost, s.config.APIPort)
 
 	gin.ForceConsoleColor()
 	gin.DefaultWriter = log.Writer()
@@ -82,7 +82,7 @@ func (s *Server) Start() {
 	s.router.GET("/report/:user", s.reportHandler.GetReport)
 	s.router.GET("/healthcheck", s.healthcheckHandler.GetStatus)
 
-	log.Print("Router started")
+	log.Print("[server.Start] HTTP router configured with all endpoints")
 
 	s.srv = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.config.APIHost, s.config.APIPort),
@@ -90,26 +90,26 @@ func (s *Server) Start() {
 	}
 
 	go func() {
-		log.Printf("Server running under goroutine, listen and serve on %s:%d", s.config.APIHost, s.config.APIPort)
+		log.Printf("[server.Start] HTTP server listening on %s:%d", s.config.APIHost, s.config.APIPort)
 		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("listen: %s\n", err)
+			log.Printf("[server.Start] Server error: %v", err)
 		}
 
-		log.Print("Server stopped")
+		log.Print("[server.Start] HTTP server stopped")
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	log.Println("[server.Start] Received shutdown signal, gracefully shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := s.srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+		log.Fatal("[server.Start] Server forced to shutdown due to error:", err)
 	}
 
-	log.Println("Server exiting")
+	log.Println("[server.Start] Server shutdown complete")
 }

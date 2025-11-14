@@ -29,14 +29,14 @@ func (t *Target) GetTargets(user string) (*domain.TargetList, error) {
 			data, err := t.getFromUrl(v)
 
 			if err != nil {
-				log.Printf("[service.Target] Error getting targets: %s from %s", err, v)
+				log.Printf("[service.Target.GetTargets] Failed to fetch targets from URL '%s' for user '%s': %v", v, user, err)
 				return nil, err
 			}
 
 			ret, err = domain.TargetListFromJson(data)
 
 			if err != nil {
-				log.Printf("[service.Target] Error unmarshalling targets: %s", err)
+				log.Printf("[service.Target.GetTargets] Failed to parse target list JSON for user '%s': %v", user, err)
 				return nil, err
 			}
 			break
@@ -49,7 +49,7 @@ func (t *Target) GetTargets(user string) (*domain.TargetList, error) {
 	}
 
 	if ret == nil {
-		log.Printf("[service.Target] No targets found for user: %s", user)
+		log.Printf("[service.Target.GetTargets] No targets configured for user '%s'", user)
 		return nil, fmt.Errorf("no targets found for user: %s", user)
 	}
 
@@ -59,18 +59,18 @@ func (t *Target) GetTargets(user string) (*domain.TargetList, error) {
 func (t *Target) getFromUrl(url string) (string, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("[service.Target] Error getting url: %s", err)
+		log.Printf("[service.Target.getFromUrl] Failed to fetch URL '%s': %v", url, err)
 		return "", err
 	}
 
 	if res.StatusCode != 200 {
-		log.Printf("[service.Target] Error: status code is %d", res.StatusCode)
+		log.Printf("[service.Target.getFromUrl] Received non-OK status code %d from URL '%s'", res.StatusCode, url)
 		return "", err
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("[service.Target] Error reading response body: %s", err)
+		log.Printf("[service.Target.getFromUrl] Failed to read response body from URL '%s': %v", url, err)
 		return "", err
 	}
 

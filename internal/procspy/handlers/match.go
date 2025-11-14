@@ -27,7 +27,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	user, err := ValidateUser(m.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Match] [%s] InsertMatch -> Error validating user: %s", user, err)
+		log.Printf("[handlers.Match.InsertMatch] [%s] User validation failed: %v", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -39,7 +39,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	body, err := ctx.GetRawData()
 
 	if err != nil {
-		log.Printf("[handler.Match] [%s] InsertMatch -> Error getting raw data: %s", user, err)
+		log.Printf("[handlers.Match.InsertMatch] [%s] Failed to read request body: %v", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -51,7 +51,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	match, err := domain.MatchFromJson(string(body))
 
 	if err != nil {
-		log.Printf("[handler.Match] [%s] InsertMatch -> Error binding json: %s", user, err)
+		log.Printf("[handlers.Match.InsertMatch] [%s] Failed to parse match JSON: %v", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -64,7 +64,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 	err = m.service.InsertMatch(match)
 
 	if err != nil {
-		log.Printf("[handler.Match] [%s] InsertMatch -> Error inserting match: %s", user, err)
+		log.Printf("[handlers.Match.InsertMatch] [%s] Failed to insert match into database: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -73,7 +73,7 @@ func (m *Match) InsertMatch(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("[handler.Match] [%s] InsertMatch -> Match Inserted: %s", user, match.ToLog())
+	log.Printf("[handlers.Match.InsertMatch] [%s] Match inserted successfully: %s", user, match.ToLog())
 
 	ctx.IndentedJSON(http.StatusCreated, gin.H{
 		"message":   "match inserted",

@@ -28,7 +28,7 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 	user, err := ValidateUser(t.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Target] [%s] GetTargets -> Error validating user: %s", user, err)
+		log.Printf("[handlers.Target.GetTargets] [%s] User validation failed: %v", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -40,7 +40,7 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 	targets, err := t.service.GetTargets(user)
 
 	if err != nil {
-		log.Printf("[handler.Target] [%s] GetTargets -> Error getting targets: %s", user, err)
+		log.Printf("[handlers.Target.GetTargets] [%s] Failed to retrieve targets from service: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -52,7 +52,7 @@ func (t *Target) GetTargets(ctx *gin.Context) {
 	matches, err := t.matches.GetMatchesInfo(user)
 
 	if err != nil {
-		log.Printf("[handler.Target] [%s] GetTargets -> Error getting matches info: %s", user, err)
+		log.Printf("[handlers.Target.GetTargets] [%s] Failed to retrieve match information: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),

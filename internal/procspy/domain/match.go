@@ -45,7 +45,7 @@ func NewMatch(user string, name string, pattern string, match string, elapsed fl
 func (m *Match) ToLog() string {
 	ret, err := json.Marshal(m)
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.Match.ToLog] Failed to marshal match to JSON: %v", err)
 		return ""
 	}
 	return string(ret)
@@ -54,7 +54,7 @@ func (m *Match) ToLog() string {
 func (m *Match) ToJson() string {
 	ret, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.Match.ToJson] Failed to marshal match to JSON: %v", err)
 		return ""
 	}
 	return string(ret)
@@ -64,7 +64,7 @@ func MatchFromJson(jsonString string) (*Match, error) {
 	ret := &Match{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.MatchFromJson] Failed to unmarshal match from JSON: %v", err)
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func MatchListFromJson(jsonString string) (*MatchList, error) {
 	ret := &MatchList{}
 	err := json.Unmarshal([]byte(jsonString), &ret)
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.MatchListFromJson] Failed to unmarshal match list from JSON: %v", err)
 		return nil, err
 	}
 	return ret, nil
@@ -84,7 +84,7 @@ func MatchListFromJson(jsonString string) (*MatchList, error) {
 func (m *MatchInfo) ToJson() string {
 	ret, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.MatchInfo.ToJson] Failed to marshal match info to JSON: %v", err)
 		return ""
 	}
 	return string(ret)
@@ -93,7 +93,7 @@ func (m *MatchInfo) ToJson() string {
 func (m *MatchInfo) ToLog() string {
 	ret, err := json.Marshal(m)
 	if err != nil {
-		log.Printf("[domain.Match] Error parsing json: %s", err)
+		log.Printf("[domain.MatchInfo.ToLog] Failed to marshal match info to JSON: %v", err)
 		return ""
 	}
 	return string(ret)

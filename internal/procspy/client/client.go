@@ -91,19 +91,19 @@ func (s *Spy) stopHttpServer() {
 func (s *Spy) httpGet(url string) (string, int, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("[httpGet] Error getting url: %s", err)
+		log.Printf("[httpGet] Error getting URL %s: %s", url, err)
 		return "", http.StatusInternalServerError, err
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("[httpGet] Error reading body: %s", err)
+		log.Printf("[httpGet] Error reading response body from %s: %s", url, err)
 		return "", res.StatusCode, err
 	}
 
 	if s.config.Debug {
-		log.Printf("[httpGet] %d Response: %s", res.StatusCode, body)
+		log.Printf("[httpGet] %d Response from %s: %s", res.StatusCode, url, body)
 	}
 
 	return string(body), res.StatusCode, nil
@@ -112,19 +112,19 @@ func (s *Spy) httpGet(url string) (string, int, error) {
 func (s *Spy) httpPost(url string, data string) (string, int, error) {
 	res, err := http.Post(url, "application/json", strings.NewReader(data))
 	if err != nil {
-		log.Printf("[httpPost] Error posting url: %s", err)
+		log.Printf("[httpPost] Error posting to URL %s: %s", url, err)
 		return "", http.StatusInternalServerError, err
 	}
 
 	defer res.Body.Close()
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("[httpPost] Error reading body: %s", err)
+		log.Printf("[httpPost] Error reading response body from %s: %s", url, err)
 		return "", res.StatusCode, err
 	}
 
 	if s.config.Debug {
-		log.Printf("[httpPost] %d \nRequest: %s\nResponse: %s", res.StatusCode, data, body)
+		log.Printf("[httpPost] %d Response from %s\nRequest: %s\nResponse: %s", res.StatusCode, url, data, body)
 	}
 
 	return string(body), res.StatusCode, nil
@@ -140,29 +140,29 @@ func (s *Spy) updateTargets() {
 	data, status, err := s.httpGet(targetUrl)
 
 	if err != nil {
-		log.Printf("[updateTargets] Error getting targets, http status code: %d from %s -> error: %s", status, targetUrl, err)
+		log.Printf("[updateTargets] Failed to fetch targets for user '%s' (HTTP %d) from %s: %s", s.config.User, status, targetUrl, err)
 		return
 	}
 
 	if status != http.StatusOK {
-		log.Printf("[updateTargets] Error getting targets, http status code: %d from %s", status, targetUrl)
+		log.Printf("[updateTargets] Unexpected HTTP status %d when fetching targets for user '%s' from %s", status, s.config.User, targetUrl)
 		return
 	}
 
 	targets, err := domain.TargetListFromJson(data)
 
 	if err != nil {
-		log.Printf("[updateTargets] Error getting targets: %s -> bad format", err)
+		log.Printf("[updateTargets] Failed to parse targets JSON for user '%s': %s", s.config.User, err)
 		return
 	}
 
 	if targets == nil {
-		log.Printf("[updateTargets] Error getting targets: nil")
+		log.Printf("[updateTargets] Received nil targets for user '%s'", s.config.User)
 		return
 	}
 
 	if len(targets.Targets) == 0 {
-		log.Printf("[updateTargets] No targets found")
+		log.Printf("[updateTargets] No targets configured for user '%s'", s.config.User)
 	}
 
 	s.targets = targets

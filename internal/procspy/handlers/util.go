@@ -12,7 +12,7 @@ func ValidateUser(users *service.Users, ctx *gin.Context) (string, error) {
 	userName := ctx.Param("user")
 
 	if !users.Exists(userName) {
-		log.Printf("[handler.util] ValidateUser -> User %s not found", userName)
+		log.Printf("[handlers.ValidateUser] User '%s' not found in authorized users list", userName)
 		return userName, errors.New("user not found")
 	}
 

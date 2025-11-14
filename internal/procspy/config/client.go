@@ -47,7 +47,7 @@ func (c *Client) SetDefaults() {
 func (c *Client) ToJson() string {
 	ret, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
-		log.Printf("[Client] Error marshalling config: %s", err)
+		log.Printf("[config.Client.ToJson] Failed to marshal client configuration to JSON: %v", err)
 	}
 
 	return string(ret)
@@ -57,13 +57,13 @@ func ClientConfigFromJson(jsonString string) (*Client, error) {
 	ret := &Client{}
 	err := json.Unmarshal([]byte(jsonString), ret)
 	if err != nil {
-		log.Printf("[Client] Error unmarshalling config: %s", err)
+		log.Printf("[config.ClientConfigFromJson] Failed to unmarshal client configuration: %v", err)
 		return nil, err
 	}
 
 	ret.SetDefaults()
 
-	log.Printf("Client config: %s", ret.ToJson())
+	log.Printf("[config.ClientConfigFromJson] Client configuration loaded successfully: %s", ret.ToJson())
 
 	return ret, nil
 }
@@ -71,7 +71,7 @@ func ClientConfigFromJson(jsonString string) (*Client, error) {
 func ClientConfigFromFile(path string) (*Client, error) {
 	byteValue, err := os.ReadFile(path)
 	if err != nil {
-		log.Printf("Error reading file: %s", err)
+		log.Printf("[config.ClientConfigFromFile] Failed to read configuration file '%s': %v", path, err)
 		return nil, err
 	}
 

@@ -27,7 +27,7 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 	user, err := ValidateUser(c.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Command] [%s] InsertCommand -> Error validating user: %s", user, err)
+		log.Printf("[handlers.Command.InsertCommand] [%s] User validation failed: %v", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -39,7 +39,7 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 	body, err := ctx.GetRawData()
 
 	if err != nil {
-		log.Printf("[handler.Command] [%s] InsertCommand -> Error getting raw data: %s", user, err)
+		log.Printf("[handlers.Command.InsertCommand] [%s] Failed to read request body: %v", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -51,7 +51,7 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 	cmd, err := domain.CommandFromJson(string(body))
 
 	if err != nil {
-		log.Printf("[handler.Command] [%s] InsertCommand -> Error binding json: %s", user, err)
+		log.Printf("[handlers.Command.InsertCommand] [%s] Failed to parse command JSON: %v", user, err)
 		ctx.IndentedJSON(http.StatusBadRequest, gin.H{
 			"error":     "invalid json",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -64,7 +64,7 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 	err = c.service.InsertCommand(cmd)
 
 	if err != nil {
-		log.Printf("[handler.Command] [%s] InsertCommand -> Error inserting command: %s", user, err)
+		log.Printf("[handlers.Command.InsertCommand] [%s] Failed to insert command into database: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -73,7 +73,7 @@ func (c *Command) InsertCommand(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("[handler.Command] [%s] InsertCommand -> Command inserted: %s", user, cmd.ToLog())
+	log.Printf("[handlers.Command.InsertCommand] [%s] Command inserted successfully: %s", user, cmd.ToLog())
 
 	ctx.IndentedJSON(http.StatusCreated, gin.H{
 		"message":   "command inserted",

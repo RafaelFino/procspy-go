@@ -32,7 +32,7 @@ func (r *Report) GetReport(ctx *gin.Context) {
 	user, err := ValidateUser(r.users, ctx)
 
 	if err != nil {
-		log.Printf("[handler.Report] [%s] GetReport -> Error validating user: %s", user, err)
+		log.Printf("[handlers.Report.GetReport] [%s] User validation failed: %v", user, err)
 		ctx.IndentedJSON(http.StatusUnauthorized, gin.H{
 			"error":     "user not found",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -44,7 +44,7 @@ func (r *Report) GetReport(ctx *gin.Context) {
 	targets, err := r.service.GetTargets(user)
 
 	if err != nil {
-		log.Printf("[handler.Report] [%s] GetReport -> Error getting targets: %s", user, err)
+		log.Printf("[handlers.Report.GetReport] [%s] Failed to retrieve targets from service: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -56,7 +56,7 @@ func (r *Report) GetReport(ctx *gin.Context) {
 	matches, err := r.matches.GetMatchesInfo(user)
 
 	if err != nil {
-		log.Printf("[handler.Report] [%s] GetReport -> Error getting matches info: %s", user, err)
+		log.Printf("[handlers.Report.GetReport] [%s] Failed to retrieve match information: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),
@@ -68,7 +68,7 @@ func (r *Report) GetReport(ctx *gin.Context) {
 	commands, err := r.commands.GetCommands(user)
 
 	if err != nil {
-		log.Printf("[handler.Report] [%s] GetReport -> Error getting commands: %s", user, err)
+		log.Printf("[handlers.Report.GetReport] [%s] Failed to retrieve commands from service: %v", user, err)
 		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 			"error":     "internal error",
 			"elapsed":   time.Since(start).Milliseconds(),

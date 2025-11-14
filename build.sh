@@ -8,6 +8,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Configurações
@@ -15,6 +16,13 @@ BUILD_DIR="bin"
 VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 LDFLAGS="-X 'main.buildDate=${BUILD_DATE}' -X 'main.version=${VERSION}'"
+
+# Função para logging com timestamp
+log_msg() {
+    local message="$1"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${GREEN}${BOLD}[${timestamp}]${NC} ${message}"
+}
 
 # Plataformas suportadas
 PLATFORMS=(
@@ -27,9 +35,9 @@ PLATFORMS=(
     "darwin/arm64"
 )
 
-echo -e "${GREEN}=== Procspy Build Script ===${NC}"
-echo "Version: ${VERSION}"
-echo "Build Date: ${BUILD_DATE}"
+log_msg "${GREEN}=== Procspy Build Script ===${NC}"
+log_msg "Version: ${VERSION}"
+log_msg "Build Date: ${BUILD_DATE}"
 echo ""
 
 # Função para exibir uso
@@ -43,12 +51,14 @@ usage() {
     echo "  -p, --platform OS/ARCH  Compila apenas para plataforma específica"
     echo "  -a, --all           Compila para todas as plataformas"
     echo "  -c, --clean         Limpa diretório de build antes"
+    echo "  --no-fmt            Pula formatação automática do código"
     echo ""
     echo "Exemplos:"
     echo "  $0                  # Testa e compila para plataforma atual"
     echo "  $0 --all            # Testa e compila para todas as plataformas"
     echo "  $0 -p linux/amd64   # Compila apenas para Linux AMD64"
     echo "  $0 --test-only      # Apenas executa testes"
+    echo "  $0 --no-fmt         # Compila sem formatar código"
     exit 0
 }
 
@@ -70,16 +80,14 @@ build_component() {
     
     mkdir -p "$output_dir"
     
-    echo -n "  Building ${component} for ${goos}/${goarch}... "
-    
     if GOOS=$goos GOARCH=$goarch go build \
         -ldflags "${LDFLAGS}" \
         -o "$output_path" \
-        "cmd/${component}/main.go"; then
-        echo -e "${GREEN}✓${NC}"
+        "cmd/${component}/main.go" 2>/dev/null; then
+        log_msg "  ${GREEN}✓${NC} Building ${component} for ${goos}/${goarch}"
         return 0
     else
-        echo -e "${RED}✗${NC}"
+        log_msg "  ${RED}✗${NC} Building ${component} for ${goos}/${goarch}"
         return 1
     fi
 }
@@ -90,7 +98,7 @@ build_platform() {
     local goos=$(echo $platform | cut -d'/' -f1)
     local goarch=$(echo $platform | cut -d'/' -f2)
     
-    echo -e "${YELLOW}=== Building for ${goos}/${goarch} ===${NC}"
+    log_msg "${YELLOW}=== Building for ${goos}/${goarch} ===${NC}"
     
     # Client
     build_component "client" "$goos" "$goarch" || return 1
@@ -109,19 +117,19 @@ build_platform() {
 
 # Função para verificar formatação do código
 check_formatting() {
-    echo -e "${YELLOW}Verificando formatação do código (go fmt)...${NC}"
+    log_msg "${YELLOW}Verificando formatação do código (go fmt)...${NC}"
     
     # Lista arquivos não formatados
     UNFORMATTED=$(gofmt -l . 2>&1 | grep -v "^vendor/" || true)
     
     if [ -n "$UNFORMATTED" ]; then
-        echo -e "${RED}✗ Arquivos não formatados encontrados:${NC}"
+        log_msg "${RED}✗ Arquivos não formatados encontrados:${NC}"
         echo "$UNFORMATTED"
         echo ""
-        echo -e "${YELLOW}Execute 'go fmt ./...' para corrigir${NC}"
+        log_msg "${YELLOW}Execute 'go fmt ./...' para corrigir${NC}"
         return 1
     else
-        echo -e "${GREEN}✓ Todos os arquivos estão formatados corretamente${NC}"
+        log_msg "${GREEN}✓ Todos os arquivos estão formatados corretamente${NC}"
         echo ""
         return 0
     fi
@@ -129,14 +137,29 @@ check_formatting() {
 
 # Função para executar linter
 run_linter() {
-    echo -e "${YELLOW}Executando linter (go vet)...${NC}"
+    log_msg "${YELLOW}Executando linter (go vet)...${NC}"
     
     if go vet ./...; then
-        echo -e "${GREEN}✓ Nenhum problema encontrado pelo linter${NC}"
+        log_msg "${GREEN}✓ Nenhum problema encontrado pelo linter${NC}"
         echo ""
         return 0
     else
-        echo -e "${RED}✗ Problemas encontrados pelo linter${NC}"
+        log_msg "${RED}✗ Problemas encontrados pelo linter${NC}"
+        echo ""
+        return 1
+    fi
+}
+
+# Função para formatação automática
+auto_format() {
+    log_msg "${YELLOW}Formatando código Go automaticamente...${NC}"
+    
+    if go fmt ./...; then
+        log_msg "${GREEN}✓ Código formatado com sucesso${NC}"
+        echo ""
+        return 0
+    else
+        log_msg "${RED}✗ Erro ao formatar código${NC}"
         echo ""
         return 1
     fi
@@ -144,7 +167,7 @@ run_linter() {
 
 # Função para executar verificações de qualidade
 run_quality_checks() {
-    echo -e "${YELLOW}=== Verificações de Qualidade ===${NC}"
+    log_msg "${YELLOW}=== Verificações de Qualidade ===${NC}"
     echo ""
     
     # Verifica formatação
@@ -157,17 +180,17 @@ run_quality_checks() {
         return 1
     fi
     
-    echo -e "${GREEN}✓ Todas as verificações de qualidade passaram${NC}"
+    log_msg "${GREEN}✓ Todas as verificações de qualidade passaram${NC}"
     echo ""
     return 0
 }
 
 # Função para limpar diretório de build
 clean_build() {
-    echo -e "${YELLOW}Limpando diretório de build...${NC}"
+    log_msg "${YELLOW}Limpando diretório de build...${NC}"
     rm -rf "$BUILD_DIR"
     rm -f coverage.out
-    echo -e "${GREEN}✓ Diretório limpo${NC}"
+    log_msg "${GREEN}✓ Diretório limpo${NC}"
     echo ""
 }
 
@@ -176,6 +199,7 @@ TEST_ONLY=false
 BUILD_ONLY=false
 BUILD_ALL=false
 CLEAN=false
+NO_FMT=false
 SPECIFIC_PLATFORM=""
 
 while [[ $# -gt 0 ]]; do
@@ -203,8 +227,12 @@ while [[ $# -gt 0 ]]; do
             CLEAN=true
             shift
             ;;
+        --no-fmt)
+            NO_FMT=true
+            shift
+            ;;
         *)
-            echo -e "${RED}Opção desconhecida: $1${NC}"
+            log_msg "${RED}Opção desconhecida: $1${NC}"
             usage
             ;;
     esac
@@ -215,10 +243,18 @@ if [ "$CLEAN" = true ]; then
     clean_build
 fi
 
+# Executa formatação automática se não for build-only e não tiver --no-fmt
+if [ "$BUILD_ONLY" = false ] && [ "$NO_FMT" = false ]; then
+    if ! auto_format; then
+        log_msg "${RED}Build abortado devido a falha na formatação${NC}"
+        exit 1
+    fi
+fi
+
 # Executa verificações de qualidade se não for build-only
 if [ "$BUILD_ONLY" = false ]; then
     if ! run_quality_checks; then
-        echo -e "${RED}Build abortado devido a falhas nas verificações de qualidade${NC}"
+        log_msg "${RED}Build abortado devido a falhas nas verificações de qualidade${NC}"
         exit 1
     fi
 fi
@@ -226,7 +262,7 @@ fi
 # Executa testes se não for build-only
 if [ "$BUILD_ONLY" = false ]; then
     if ! ./test.sh; then
-        echo -e "${RED}Build abortado devido a falhas nos testes${NC}"
+        log_msg "${RED}Build abortado devido a falhas nos testes${NC}"
         exit 1
     fi
     echo ""
@@ -246,12 +282,12 @@ if [ -n "$SPECIFIC_PLATFORM" ]; then
     build_platform "$SPECIFIC_PLATFORM"
 elif [ "$BUILD_ALL" = true ]; then
     # Todas as plataformas
-    echo -e "${YELLOW}=== Building for all platforms ===${NC}"
+    log_msg "${YELLOW}=== Building for all platforms ===${NC}"
     echo ""
     
     for platform in "${PLATFORMS[@]}"; do
         build_platform "$platform" || {
-            echo -e "${RED}Build failed for $platform${NC}"
+            log_msg "${RED}Build failed for $platform${NC}"
             exit 1
         }
     done
@@ -263,11 +299,11 @@ else
 fi
 
 # Resumo
-echo -e "${GREEN}=== Build Completo ===${NC}"
-echo "Binários gerados em: ${BUILD_DIR}/"
+log_msg "${GREEN}=== Build Completo ===${NC}"
+log_msg "Binários gerados em: ${BUILD_DIR}/"
 echo ""
-echo "Estrutura:"
+log_msg "Estrutura:"
 tree -L 2 "$BUILD_DIR" 2>/dev/null || find "$BUILD_DIR" -type f
 
 echo ""
-echo -e "${GREEN}✓ Build concluído com sucesso!${NC}"
+log_msg "${GREEN}✓ Build concluído com sucesso!${NC}"

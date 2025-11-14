@@ -128,12 +128,12 @@ func TestCommand_ToLog(t *testing.T) {
 // Valida cenários: JSON válido, JSON inválido
 func TestCommandFromJson(t *testing.T) {
 	tests := []struct {
-		name         string
-		json         string
-		wantErr      bool
-		wantUser     string
-		wantName     string
-		wantCmdLine  string
+		name        string
+		json        string
+		wantErr     bool
+		wantUser    string
+		wantName    string
+		wantCmdLine string
 	}{
 		{
 			name: "JSON válido completo",

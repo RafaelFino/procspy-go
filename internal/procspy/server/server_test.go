@@ -187,9 +187,9 @@ func TestNewServer_WithMultipleUsers(t *testing.T) {
 // TestNewServer_WithDifferentPorts testa criação com portas diferentes
 func TestNewServer_WithDifferentPorts(t *testing.T) {
 	tests := []struct {
-		name    string
-		port    int
-		host    string
+		name string
+		port int
+		host string
 	}{
 		{"Porta padrão", 8080, "localhost"},
 		{"Porta alternativa", 9090, "localhost"},

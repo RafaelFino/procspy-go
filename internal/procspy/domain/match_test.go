@@ -114,9 +114,9 @@ func TestMatch_ToLog(t *testing.T) {
 // Valida cenários: JSON válido, JSON inválido
 func TestMatchFromJson(t *testing.T) {
 	tests := []struct {
-		name    string
-		json    string
-		wantErr bool
+		name     string
+		json     string
+		wantErr  bool
 		wantUser string
 		wantName string
 	}{
@@ -129,7 +129,7 @@ func TestMatchFromJson(t *testing.T) {
 				"match": "steam.exe",
 				"elapsed": 15.5
 			}`,
-			wantErr: false,
+			wantErr:  false,
 			wantUser: "test_user",
 			wantName: "games",
 		},
@@ -139,7 +139,7 @@ func TestMatchFromJson(t *testing.T) {
 				"user": "user1",
 				"name": "browsers"
 			}`,
-			wantErr: false,
+			wantErr:  false,
 			wantUser: "user1",
 			wantName: "browsers",
 		},
@@ -149,9 +149,9 @@ func TestMatchFromJson(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "JSON vazio",
-			json:    `{}`,
-			wantErr: false,
+			name:     "JSON vazio",
+			json:     `{}`,
+			wantErr:  false,
 			wantUser: "",
 			wantName: "",
 		},

@@ -283,33 +283,33 @@ func TestTarget_ResetElapsed(t *testing.T) {
 // Valida cenários: abaixo do limite, no limite, acima do limite
 func TestTarget_CheckLimit(t *testing.T) {
 	tests := []struct {
-		name        string
-		elapsed     float64
-		weekdayMult float64
+		name         string
+		elapsed      float64
+		weekdayMult  float64
 		wantExceeded bool
 	}{
 		{
-			name:        "Abaixo do limite",
-			elapsed:     1800.0, // 30 minutos
-			weekdayMult: 1.0,    // limite de 1 hora
+			name:         "Abaixo do limite",
+			elapsed:      1800.0, // 30 minutos
+			weekdayMult:  1.0,    // limite de 1 hora
 			wantExceeded: false,
 		},
 		{
-			name:        "Exatamente no limite",
-			elapsed:     3600.0, // 1 hora
-			weekdayMult: 1.0,    // limite de 1 hora
+			name:         "Exatamente no limite",
+			elapsed:      3600.0, // 1 hora
+			weekdayMult:  1.0,    // limite de 1 hora
 			wantExceeded: true,
 		},
 		{
-			name:        "Acima do limite",
-			elapsed:     4000.0, // mais de 1 hora
-			weekdayMult: 1.0,    // limite de 1 hora
+			name:         "Acima do limite",
+			elapsed:      4000.0, // mais de 1 hora
+			weekdayMult:  1.0,    // limite de 1 hora
 			wantExceeded: true,
 		},
 		{
-			name:        "Limite zero (sem limite)",
-			elapsed:     1000.0,
-			weekdayMult: 0.0,
+			name:         "Limite zero (sem limite)",
+			elapsed:      1000.0,
+			weekdayMult:  0.0,
 			wantExceeded: false,
 		},
 	}
@@ -339,10 +339,10 @@ func TestTarget_CheckLimit(t *testing.T) {
 // Valida que aviso é disparado em 95% do limite
 func TestTarget_CheckWarning(t *testing.T) {
 	tests := []struct {
-		name         string
-		elapsed      float64
-		weekdayMult  float64
-		wantWarning  bool
+		name        string
+		elapsed     float64
+		weekdayMult float64
+		wantWarning bool
 	}{
 		{
 			name:        "Abaixo do threshold de aviso",
@@ -596,7 +596,7 @@ func TestTarget_setWeekdays_PartialConfig(t *testing.T) {
 	target := &Target{
 		Name: "test",
 		Weekdays: map[int]float64{
-			0: 3.0, // Domingo customizado
+			0: 3.0,  // Domingo customizado
 			1: 0.25, // Segunda customizada
 		},
 	}

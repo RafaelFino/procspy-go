@@ -12,7 +12,7 @@ func TestNewTarget(t *testing.T) {
 	cfg := &config.Server{UserTarges: map[string]string{"user1": "url"}}
 	targetService := service.NewTarget(cfg)
 	usersService := service.NewUsers(cfg)
-	
+
 	conn := storage.NewDbConnection(":memory:")
 	defer conn.Close()
 	matchService := service.NewMatch(conn)
@@ -28,7 +28,7 @@ func TestTarget_GetTargets_InvalidUser(t *testing.T) {
 	cfg := &config.Server{UserTarges: map[string]string{"user1": "url"}}
 	targetService := service.NewTarget(cfg)
 	usersService := service.NewUsers(cfg)
-	
+
 	conn := storage.NewDbConnection(":memory:")
 	defer conn.Close()
 	matchService := service.NewMatch(conn)

@@ -31,10 +31,10 @@ func TestNewWatcher(t *testing.T) {
 // TestWatcher_SetDefaults testa a aplicação de valores padrão
 func TestWatcher_SetDefaults(t *testing.T) {
 	tests := []struct {
-		name              string
-		config            *Watcher
-		expectedInterval  int
-		expectedLogPath   string
+		name               string
+		config             *Watcher
+		expectedInterval   int
+		expectedLogPath    string
 		expectedProcspyURL string
 	}{
 		{
@@ -44,8 +44,8 @@ func TestWatcher_SetDefaults(t *testing.T) {
 				LogPath:    "",
 				ProcspyURL: "",
 			},
-			expectedInterval:  10,
-			expectedLogPath:   "logs",
+			expectedInterval:   10,
+			expectedLogPath:    "logs",
 			expectedProcspyURL: "http://localhost:8888",
 		},
 		{
@@ -55,8 +55,8 @@ func TestWatcher_SetDefaults(t *testing.T) {
 				LogPath:    "custom",
 				ProcspyURL: "http://custom:9999",
 			},
-			expectedInterval:  10,
-			expectedLogPath:   "custom",
+			expectedInterval:   10,
+			expectedLogPath:    "custom",
 			expectedProcspyURL: "http://custom:9999",
 		},
 		{
@@ -66,8 +66,8 @@ func TestWatcher_SetDefaults(t *testing.T) {
 				LogPath:    "/var/log",
 				ProcspyURL: "http://server:8080",
 			},
-			expectedInterval:  30,
-			expectedLogPath:   "/var/log",
+			expectedInterval:   30,
+			expectedLogPath:    "/var/log",
 			expectedProcspyURL: "http://server:8080",
 		},
 	}
@@ -344,10 +344,10 @@ func TestWatcher_SetDefaults_EdgeCases(t *testing.T) {
 func TestWatcher_SetDefaults_PartialConfig(t *testing.T) {
 	// Arrange: Cria config com alguns campos definidos
 	config := &Watcher{
-		Interval:   0,                    // Deve receber default
-		LogPath:    "custom/path",        // Não deve mudar
-		ProcspyURL: "",                   // Deve receber default
-		StartCmd:   "/custom/start.sh",   // Não deve mudar
+		Interval:   0,                  // Deve receber default
+		LogPath:    "custom/path",      // Não deve mudar
+		ProcspyURL: "",                 // Deve receber default
+		StartCmd:   "/custom/start.sh", // Não deve mudar
 	}
 
 	// Act: Aplica defaults

@@ -43,8 +43,8 @@ func TestNewConfig(t *testing.T) {
 // Valida que campos vazios ou inválidos recebem valores padrão
 func TestClient_SetDefaults(t *testing.T) {
 	tests := []struct {
-		name           string
-		config         *Client
+		name             string
+		config           *Client
 		expectedInterval int
 		expectedLogPath  string
 		expectedAPIPort  int
@@ -484,9 +484,9 @@ func TestClientConfigFromJson_NullJSON(t *testing.T) {
 func TestClient_SetDefaults_PartialConfig(t *testing.T) {
 	// Arrange: Cria config com alguns campos definidos
 	config := &Client{
-		Interval: 0,      // Deve receber default
-		LogPath:  "custom", // Não deve mudar
-		APIPort:  0,      // Deve receber default
+		Interval: 0,             // Deve receber default
+		LogPath:  "custom",      // Não deve mudar
+		APIPort:  0,             // Deve receber default
 		APIHost:  "custom.host", // Não deve mudar
 	}
 
@@ -515,8 +515,8 @@ func TestClient_SetDefaults_PartialConfig(t *testing.T) {
 // Valida comportamento com valores negativos e limites
 func TestClient_SetDefaults_EdgeCases(t *testing.T) {
 	tests := []struct {
-		name            string
-		interval        int
+		name             string
+		interval         int
 		expectedInterval int
 	}{
 		{"Interval negativo", -10, 30},
